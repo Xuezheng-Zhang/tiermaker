@@ -6,11 +6,8 @@ function App() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <header className="text-center mb-8">
           <h1 className="text-2xl font-bold text-zinc-800">
-            等级排名生成器
+            从夯到拉生成器
           </h1>
-          <p className="mt-1 text-zinc-500 text-sm">
-            自定义等级名称与颜色
-          </p>
         </header>
 
         <main>

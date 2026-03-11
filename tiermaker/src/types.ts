@@ -119,6 +119,18 @@ export const QUESTION_BANKS: QuestionBank[] = [
       { name: "健身", imageUrl: flickrImg("gym", 50) },
     ],
   },
+  {
+    id: "breakfast",
+    name: "早餐",
+    items: [
+      { name: "小笼包/点心", imageUrl: "https://images.pexels.com/photos/3754988/pexels-photo-3754988.jpeg?auto=compress&cs=tinysrgb&w=300" },
+      { name: "面条 (热干面/牛肉面)", imageUrl: "https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=300" },
+      { name: "煎饼/馅饼 (肉夹馍感)", imageUrl: "https://images.pexels.com/photos/12916860/pexels-photo-12916860.jpeg?auto=compress&cs=tinysrgb&w=300" },
+      { name: "粥/豆浆类", imageUrl: "https://images.pexels.com/photos/6646359/pexels-photo-6646359.jpeg?auto=compress&cs=tinysrgb&w=300" },
+      { name: "馄饨/水饺", imageUrl: "https://images.pexels.com/photos/955137/pexels-photo-955137.jpeg?auto=compress&cs=tinysrgb&w=300" },
+      { name: "炸油条/碳水类", imageUrl: "https://images.pexels.com/photos/12836274/pexels-photo-12836274.jpeg?auto=compress&cs=tinysrgb&w=300" },
+    ],
+  },
 ];
 
 /** 根据背景色亮度返回白字或黑字 */

@@ -78,7 +78,7 @@ export function TierList() {
         logging: false,
       });
       const link = document.createElement("a");
-      link.download = `等级排名-${Date.now()}.png`;
+      link.download = `从夯到拉-${Date.now()}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (err) {
