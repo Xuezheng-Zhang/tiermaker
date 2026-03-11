@@ -149,17 +149,14 @@ export function TierList() {
             <div
               draggable
               onDragStart={(e) => handleCurrentItemDragStart(e, currentItem)}
-              className="inline-flex flex-col items-center justify-center w-[100px] rounded-lg bg-white border-2 border-dashed border-zinc-300 overflow-hidden cursor-grab active:cursor-grabbing hover:border-pink-400 hover:bg-pink-50/50 transition-colors"
+              className="inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed border-zinc-300 overflow-hidden cursor-grab active:cursor-grabbing hover:border-pink-400 hover:bg-pink-50/50 transition-colors"
             >
               <img
                 src={currentItem.imageUrl}
-                alt={currentItem.name}
+                alt=""
                 className="w-full aspect-square object-cover pointer-events-none"
                 draggable={false}
               />
-              <span className="text-xs font-medium text-zinc-700 py-1 px-2 truncate w-full text-center">
-                {currentItem.name}
-              </span>
             </div>
           ) : hasMore ? null : (
             <div className="py-3 px-5 rounded-lg bg-zinc-100 text-zinc-500 text-sm">

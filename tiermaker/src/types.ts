@@ -43,25 +43,17 @@ export interface QuestionBank {
 
 /** 生成 LoremFlickr 图片 URL（按关键词，lock 保证同一项始终同一张图） */
 function flickrImg(keyword: string, lock: number) {
-  return `https://loremflickr.com/150/150/${encodeURIComponent(keyword)}?lock=${lock}`;
+  return `https://loremflickr.com/256/256/${encodeURIComponent(keyword)}?lock=${lock}`;
 }
 
 export const QUESTION_BANKS: QuestionBank[] = [
   {
     id: "fruits",
     name: "水果",
-    items: [
-      { name: "苹果", imageUrl: flickrImg("apple", 1) },
-      { name: "香蕉", imageUrl: flickrImg("banana", 2) },
-      { name: "橙子", imageUrl: flickrImg("orange", 3) },
-      { name: "葡萄", imageUrl: flickrImg("grape", 4) },
-      { name: "西瓜", imageUrl: flickrImg("watermelon", 5) },
-      { name: "草莓", imageUrl: flickrImg("strawberry", 6) },
-      { name: "芒果", imageUrl: flickrImg("mango", 7) },
-      { name: "桃子", imageUrl: flickrImg("peach", 8) },
-      { name: "梨", imageUrl: flickrImg("pear", 9) },
-      { name: "樱桃", imageUrl: flickrImg("cherry", 10) },
-    ],
+    items: Array.from({ length: 10 }, (_, i) => ({
+      name: `水果${i + 1}`,
+      imageUrl: `https://loremflickr.com/256/256/fruit?lock=${i + 1}`,
+    })),
   },
   {
     id: "drinks",
