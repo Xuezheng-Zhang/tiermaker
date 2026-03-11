@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, PlacedItem, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
@@ -8,11 +9,12 @@ function generateId() {
 }
 
 export function TierList() {
-  const [tiers, setTiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
-  const [isEditing, setIsEditing] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [tiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [placedItems, setPlacedItems] = useState<Record<string, PlacedItem[]>>({});
+  const [exporting, setExporting] = useState(false);
 
   const selectedBank = selectedBankId
     ? QUESTION_BANKS.find((b) => b.id === selectedBankId)
@@ -22,25 +24,6 @@ export function TierList() {
       ? selectedBank.items[currentIndex]
       : null;
   const hasMore = selectedBank && currentIndex < selectedBank.items.length;
-
-  const updateTier = (id: string, updates: Partial<TierRowType>) => {
-    setTiers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    );
-  };
-
-  const removeTier = (id: string) => {
-    setTiers((prev) => prev.filter((t) => t.id !== id));
-    setPlacedItems((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  };
-
-  const resetToDefault = () => {
-    setTiers(DEFAULT_TIERS);
-  };
 
   const handleSelectBank = (bankId: string) => {
     setSelectedBankId(bankId);
@@ -84,6 +67,27 @@ export function TierList() {
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const handleExportImage = async () => {
+    if (!tableRef.current) return;
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(tableRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#333",
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `等级排名-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("导出图片失败:", err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="w-full">
       {/* 选择题库 */}
@@ -110,34 +114,23 @@ export function TierList() {
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-medium text-zinc-700">等级列表</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditing((e) => !e)}
-            className="px-2.5 py-1 text-sm rounded bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition-colors"
-          >
-            {isEditing ? "完成" : "编辑"}
-          </button>
-          <button
-            type="button"
-            onClick={resetToDefault}
-            className="px-2.5 py-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-          >
-            恢复默认
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleExportImage}
+          disabled={exporting}
+          className="px-2.5 py-1 text-sm rounded bg-zinc-200 text-zinc-700 hover:bg-zinc-300 disabled:opacity-50 transition-colors"
+        >
+          {exporting ? "导出中…" : "导出图片"}
+        </button>
       </div>
 
-      <div className="border border-[#333] rounded overflow-hidden bg-[#333]">
+      <div ref={tableRef} className="border-2 border-[#111] rounded overflow-hidden bg-[#333]">
         {tiers.map((tier) => (
           <TierRow
             key={tier.id}
             tier={tier}
             placedItems={placedItems[tier.id] || []}
-            onUpdate={updateTier}
-            onRemove={removeTier}
             onDrop={(data) => handleDrop(tier.id, data)}
-            isEditing={isEditing}
           />
         ))}
       </div>

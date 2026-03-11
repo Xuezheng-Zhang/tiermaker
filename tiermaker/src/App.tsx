@@ -18,7 +18,6 @@ function App() {
         </main>
 
         <footer className="mt-10 text-center text-zinc-400 text-xs">
-          点击等级文字可编辑
         </footer>
       </div>
     </div>
