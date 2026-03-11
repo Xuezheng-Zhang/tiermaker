@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+:root {
+  --tier-夯: #fb7299;
+  --tier-顶级: #00d4aa;
+  --tier-人上人: #ffb347;
+  --tier-NPC: #94a3b8;
+  --tier-拉完了: #64748b;
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
