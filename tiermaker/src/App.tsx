@@ -184,25 +184,27 @@ function App() {
           </div>
         </header>
 
-        <main>
-          <div className="relative">
-            <div className="absolute right-0 top-0 z-10 rounded-lg border border-zinc-300 bg-white/95 px-3 py-2 text-xs shadow-sm">
-              <div className="mb-1 font-semibold text-zinc-700">
-                房间成员{members.length > 0 ? `（${members.length}）` : ""}
-              </div>
-              {members.length > 0 ? (
-                <div className="flex flex-col gap-1 text-zinc-600">
-                  {members.map((member) => (
-                    <span key={member.id}>
-                      {member.nickname}
-                      {member.id === selfId ? "（你）" : ""}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-zinc-400">未加入房间</div>
-              )}
+        <main className="relative">
+          {inRoom && members.length > 0 && (
+            <div className="pointer-events-none absolute right-0 top-0 z-20 m-3 hidden items-center gap-1.5 sm:flex">
+              {members.map((member) => {
+                const firstChar = member.nickname?.[0] ?? "?";
+                const isSelf = member.id === selfId;
+                return (
+                  <div
+                    key={member.id}
+                    className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-sm ${
+                      isSelf ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-300"
+                    }`}
+                    title={member.nickname}
+                  >
+                    {firstChar}
+                  </div>
+                );
+              })}
             </div>
+          )}
+          <div className="mt-2 sm:mt-0">
             <TierList boardState={boardState} onBoardStateChange={handleBoardStateChange} />
           </div>
         </main>
