@@ -9,12 +9,18 @@ interface TierRowProps {
       | { type: "current"; itemId: string; name: string; imageUrl: string }
       | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string }
   ) => void;
+  onTapTier?: () => void;
+  onTapPlacedItem?: (item: PlacedItemType) => void;
+  selectedTouchItemId?: string | null;
 }
 
 export function TierRow({
   tier,
   placedItems,
   onDrop,
+  onTapTier,
+  onTapPlacedItem,
+  selectedTouchItemId,
 }: TierRowProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -113,6 +119,7 @@ export function TierRow({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onClick={onTapTier}
       >
         {placedItems.length > 0 ? (
           placedItems.map((item) => (
@@ -120,7 +127,15 @@ export function TierRow({
               key={item.id}
               draggable
               onDragStart={(e) => handlePlacedItemDragStart(e, item)}
-              className="flex-shrink-0 w-[96px] rounded-lg overflow-hidden bg-white/10 cursor-grab active:cursor-grabbing hover:bg-white/20 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTapPlacedItem?.(item);
+              }}
+              className={`flex-shrink-0 w-[96px] rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-colors ${
+                selectedTouchItemId === item.id
+                  ? "ring-2 ring-pink-400 bg-white/25"
+                  : "bg-white/10 hover:bg-white/20"
+              }`}
             >
               <img
                 src={item.imageUrl}

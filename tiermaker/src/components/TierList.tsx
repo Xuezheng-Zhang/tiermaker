@@ -17,6 +17,10 @@ interface TierListProps {
   }) => void;
 }
 
+type DropData =
+  | { type: "current"; itemId: string; name: string; imageUrl: string }
+  | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
+
 export function TierList({
   boardState,
   onSelectBank,
@@ -26,6 +30,7 @@ export function TierList({
   const tableRef = useRef<HTMLDivElement>(null);
   const [tiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
   const [exporting, setExporting] = useState(false);
+  const [pendingTouchDrop, setPendingTouchDrop] = useState<DropData | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const { selectedBankId, currentIndex, placedItems } = boardState;
 
@@ -46,9 +51,9 @@ export function TierList({
     onSelectBank(bankId);
   };
 
-  type DropData =
-    | { type: "current"; itemId: string; name: string; imageUrl: string }
-    | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
+  const isTouchDevice =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(pointer: coarse)").matches || "ontouchstart" in window);
 
   const playDropSound = () => {
     const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -91,6 +96,7 @@ export function TierList({
       });
       playDropSound();
     }
+    setPendingTouchDrop(null);
   };
 
   const handleCurrentItemDragStart = (
@@ -129,6 +135,31 @@ export function TierList({
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleTapCurrentItem = () => {
+    if (!currentItem || !currentItemId) return;
+    setPendingTouchDrop({
+      type: "current",
+      itemId: currentItemId,
+      name: currentItem.name,
+      imageUrl: currentItem.imageUrl,
+    });
+  };
+
+  const handleTapPlacedItem = (tierId: string, item: { id: string; name: string; imageUrl: string }) => {
+    setPendingTouchDrop({
+      type: "move",
+      sourceTierId: tierId,
+      itemId: item.id,
+      name: item.name,
+      imageUrl: item.imageUrl,
+    });
+  };
+
+  const handleTapTier = (tierId: string) => {
+    if (!pendingTouchDrop) return;
+    handleDrop(tierId, pendingTouchDrop);
   };
 
   return (
@@ -174,6 +205,9 @@ export function TierList({
             tier={tier}
             placedItems={placedItems[tier.id] || []}
             onDrop={(data) => handleDrop(tier.id, data)}
+            onTapTier={() => handleTapTier(tier.id)}
+            onTapPlacedItem={(item) => handleTapPlacedItem(tier.id, item)}
+            selectedTouchItemId={pendingTouchDrop?.itemId ?? null}
           />
         ))}
       </div>
@@ -182,18 +216,30 @@ export function TierList({
       {selectedBank && (
         <div className="mt-4">
           {hasMore && currentItem ? (
-            <div
-              draggable
-              onDragStart={(e) => handleCurrentItemDragStart(e, currentItem, currentItemId!)}
-              className="inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed border-zinc-300 overflow-hidden cursor-grab active:cursor-grabbing hover:border-pink-400 hover:bg-pink-50/50 transition-colors"
-            >
-              <img
-                src={currentItem.imageUrl}
-                alt=""
-                className="w-full aspect-square object-cover pointer-events-none"
-                draggable={false}
-              />
-            </div>
+            <>
+              <div
+                draggable
+                onDragStart={(e) => handleCurrentItemDragStart(e, currentItem, currentItemId!)}
+                onClick={handleTapCurrentItem}
+                className={`inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed overflow-hidden cursor-grab active:cursor-grabbing transition-colors ${
+                  pendingTouchDrop?.type === "current"
+                    ? "border-pink-500 bg-pink-50/70"
+                    : "border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50"
+                }`}
+              >
+                <img
+                  src={currentItem.imageUrl}
+                  alt=""
+                  className="w-full aspect-square object-cover pointer-events-none"
+                  draggable={false}
+                />
+              </div>
+              {isTouchDevice && (
+                <div className="mt-2 text-xs text-zinc-500">
+                  触屏操作：先点图片，再点目标等级行即可放置/移动
+                </div>
+              )}
+            </>
           ) : hasMore ? null : (
             <div className="py-3 px-5 rounded-lg bg-zinc-100 text-zinc-500 text-sm">
               本题库已排完，可重新选择题库或切换其他题库继续
