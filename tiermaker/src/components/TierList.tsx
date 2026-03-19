@@ -15,6 +15,7 @@ export function TierList() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [placedItems, setPlacedItems] = useState<Record<string, PlacedItem[]>>({});
   const [exporting, setExporting] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const selectedBank = selectedBankId
     ? QUESTION_BANKS.find((b) => b.id === selectedBankId)
@@ -35,6 +36,26 @@ export function TierList() {
     | { type: "current"; name: string; imageUrl: string }
     | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
 
+  const playDropSound = () => {
+    const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+    const ctx = audioCtxRef.current;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(720, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(980, ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  };
+
   const handleDrop = (tierId: string, data: DropData) => {
     if (data.type === "current") {
       setPlacedItems((prev) => ({
@@ -47,6 +68,7 @@ export function TierList() {
       if (selectedBank && currentItem && currentItem.name === data.name) {
         setCurrentIndex((i) => i + 1);
       }
+      playDropSound();
     } else {
       const { sourceTierId, itemId, name, imageUrl } = data;
       if (sourceTierId === tierId) return;
@@ -56,6 +78,7 @@ export function TierList() {
         next[tierId] = [...(next[tierId] || []), { id: generateId(), name, imageUrl }];
         return next;
       });
+      playDropSound();
     }
   };
 
