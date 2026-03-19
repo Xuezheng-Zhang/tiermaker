@@ -1,21 +1,24 @@
 import { useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import { TierRow } from "./TierRow";
-import type { TierRow as TierRowType, PlacedItem, QuestionBankItem } from "../types";
+import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
 
 function generateId() {
   return Math.random().toString(36).slice(2, 11);
 }
 
-export function TierList() {
+interface TierListProps {
+  boardState: BoardState;
+  onBoardStateChange: (next: BoardState) => void;
+}
+
+export function TierList({ boardState, onBoardStateChange }: TierListProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [tiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
-  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [placedItems, setPlacedItems] = useState<Record<string, PlacedItem[]>>({});
   const [exporting, setExporting] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const { selectedBankId, currentIndex, placedItems } = boardState;
 
   const selectedBank = selectedBankId
     ? QUESTION_BANKS.find((b) => b.id === selectedBankId)
@@ -27,9 +30,11 @@ export function TierList() {
   const hasMore = selectedBank && currentIndex < selectedBank.items.length;
 
   const handleSelectBank = (bankId: string) => {
-    setSelectedBankId(bankId);
-    setCurrentIndex(0);
-    setPlacedItems({});
+    onBoardStateChange({
+      selectedBankId: bankId,
+      currentIndex: 0,
+      placedItems: {},
+    });
   };
 
   type DropData =
@@ -58,25 +63,34 @@ export function TierList() {
 
   const handleDrop = (tierId: string, data: DropData) => {
     if (data.type === "current") {
-      setPlacedItems((prev) => ({
-        ...prev,
+      const nextPlacedItems = {
+        ...placedItems,
         [tierId]: [
-          ...(prev[tierId] || []),
+          ...(placedItems[tierId] || []),
           { id: generateId(), name: data.name, imageUrl: data.imageUrl },
         ],
-      }));
-      if (selectedBank && currentItem && currentItem.name === data.name) {
-        setCurrentIndex((i) => i + 1);
-      }
+      };
+      onBoardStateChange({
+        selectedBankId,
+        currentIndex:
+          selectedBank && currentItem && currentItem.name === data.name
+            ? currentIndex + 1
+            : currentIndex,
+        placedItems: nextPlacedItems,
+      });
       playDropSound();
     } else {
       const { sourceTierId, itemId, name, imageUrl } = data;
       if (sourceTierId === tierId) return;
-      setPlacedItems((prev) => {
-        const next = { ...prev };
-        next[sourceTierId] = (next[sourceTierId] || []).filter((p) => p.id !== itemId);
-        next[tierId] = [...(next[tierId] || []), { id: generateId(), name, imageUrl }];
-        return next;
+      const nextPlacedItems = { ...placedItems };
+      nextPlacedItems[sourceTierId] = (nextPlacedItems[sourceTierId] || []).filter(
+        (p) => p.id !== itemId
+      );
+      nextPlacedItems[tierId] = [...(nextPlacedItems[tierId] || []), { id: generateId(), name, imageUrl }];
+      onBoardStateChange({
+        selectedBankId,
+        currentIndex,
+        placedItems: nextPlacedItems,
       });
       playDropSound();
     }

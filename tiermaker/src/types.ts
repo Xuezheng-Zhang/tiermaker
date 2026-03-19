@@ -11,6 +11,12 @@ export interface PlacedItem {
   imageUrl: string;
 }
 
+export interface BoardState {
+  selectedBankId: string | null;
+  currentIndex: number;
+  placedItems: Record<string, PlacedItem[]>;
+}
+
 /** 从等级行内拖出时传递的数据 */
 export interface MovePayload {
   type: "move";
@@ -18,6 +24,11 @@ export interface MovePayload {
   itemId: string;
   name: string;
   imageUrl: string;
+}
+
+export interface RoomMember {
+  id: string;
+  nickname: string;
 }
 
 export const DEFAULT_TIERS: TierRow[] = [
