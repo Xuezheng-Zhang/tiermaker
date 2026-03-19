@@ -6,7 +6,7 @@ interface TierRowProps {
   placedItems: PlacedItemType[];
   onDrop: (
     data:
-      | { type: "current"; name: string; imageUrl: string }
+      | { type: "current"; itemId: string; name: string; imageUrl: string }
       | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string }
   ) => void;
 }
@@ -19,7 +19,7 @@ export function TierRow({
   const [isDragOver, setIsDragOver] = useState(false);
 
   type DropData =
-    | { type: "current"; name: string; imageUrl: string }
+    | { type: "current"; itemId: string; name: string; imageUrl: string }
     | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -38,10 +38,16 @@ export function TierRow({
       };
       if (
         parsed?.type === "current" &&
+        parsed.itemId != null &&
         parsed.name != null &&
         parsed.imageUrl != null
       ) {
-        data = { type: "current", name: parsed.name, imageUrl: parsed.imageUrl };
+        data = {
+          type: "current",
+          itemId: parsed.itemId,
+          name: parsed.name,
+          imageUrl: parsed.imageUrl,
+        };
       } else if (
         parsed?.type === "move" &&
         parsed.sourceTierId != null &&

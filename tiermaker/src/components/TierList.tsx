@@ -4,16 +4,25 @@ import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
 
-function generateId() {
-  return Math.random().toString(36).slice(2, 11);
-}
-
 interface TierListProps {
   boardState: BoardState;
-  onBoardStateChange: (next: BoardState) => void;
+  onSelectBank: (bankId: string) => void;
+  onPlaceCurrentItem: (payload: { tierId: string; itemId: string; name: string; imageUrl: string }) => void;
+  onMovePlacedItem: (payload: {
+    sourceTierId: string;
+    targetTierId: string;
+    itemId: string;
+    name: string;
+    imageUrl: string;
+  }) => void;
 }
 
-export function TierList({ boardState, onBoardStateChange }: TierListProps) {
+export function TierList({
+  boardState,
+  onSelectBank,
+  onPlaceCurrentItem,
+  onMovePlacedItem,
+}: TierListProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [tiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
   const [exporting, setExporting] = useState(false);
@@ -28,17 +37,17 @@ export function TierList({ boardState, onBoardStateChange }: TierListProps) {
       ? selectedBank.items[currentIndex]
       : null;
   const hasMore = selectedBank && currentIndex < selectedBank.items.length;
+  const currentItemId =
+    selectedBank && currentIndex < selectedBank.items.length
+      ? `${selectedBank.id}:${currentIndex}`
+      : null;
 
   const handleSelectBank = (bankId: string) => {
-    onBoardStateChange({
-      selectedBankId: bankId,
-      currentIndex: 0,
-      placedItems: {},
-    });
+    onSelectBank(bankId);
   };
 
   type DropData =
-    | { type: "current"; name: string; imageUrl: string }
+    | { type: "current"; itemId: string; name: string; imageUrl: string }
     | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
 
   const playDropSound = () => {
@@ -63,43 +72,40 @@ export function TierList({ boardState, onBoardStateChange }: TierListProps) {
 
   const handleDrop = (tierId: string, data: DropData) => {
     if (data.type === "current") {
-      const nextPlacedItems = {
-        ...placedItems,
-        [tierId]: [
-          ...(placedItems[tierId] || []),
-          { id: generateId(), name: data.name, imageUrl: data.imageUrl },
-        ],
-      };
-      onBoardStateChange({
-        selectedBankId,
-        currentIndex:
-          selectedBank && currentItem && currentItem.name === data.name
-            ? currentIndex + 1
-            : currentIndex,
-        placedItems: nextPlacedItems,
+      onPlaceCurrentItem({
+        tierId,
+        itemId: data.itemId,
+        name: data.name,
+        imageUrl: data.imageUrl,
       });
       playDropSound();
     } else {
       const { sourceTierId, itemId, name, imageUrl } = data;
       if (sourceTierId === tierId) return;
-      const nextPlacedItems = { ...placedItems };
-      nextPlacedItems[sourceTierId] = (nextPlacedItems[sourceTierId] || []).filter(
-        (p) => p.id !== itemId
-      );
-      nextPlacedItems[tierId] = [...(nextPlacedItems[tierId] || []), { id: generateId(), name, imageUrl }];
-      onBoardStateChange({
-        selectedBankId,
-        currentIndex,
-        placedItems: nextPlacedItems,
+      onMovePlacedItem({
+        sourceTierId,
+        targetTierId: tierId,
+        itemId,
+        name,
+        imageUrl,
       });
       playDropSound();
     }
   };
 
-  const handleCurrentItemDragStart = (e: React.DragEvent, item: QuestionBankItem) => {
+  const handleCurrentItemDragStart = (
+    e: React.DragEvent,
+    item: QuestionBankItem,
+    itemId: string
+  ) => {
     e.dataTransfer.setData(
       "text/plain",
-      JSON.stringify({ type: "current" as const, name: item.name, imageUrl: item.imageUrl })
+      JSON.stringify({
+        type: "current" as const,
+        itemId,
+        name: item.name,
+        imageUrl: item.imageUrl,
+      })
     );
     e.dataTransfer.effectAllowed = "move";
   };
@@ -178,7 +184,7 @@ export function TierList({ boardState, onBoardStateChange }: TierListProps) {
           {hasMore && currentItem ? (
             <div
               draggable
-              onDragStart={(e) => handleCurrentItemDragStart(e, currentItem)}
+              onDragStart={(e) => handleCurrentItemDragStart(e, currentItem, currentItemId!)}
               className="inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed border-zinc-300 overflow-hidden cursor-grab active:cursor-grabbing hover:border-pink-400 hover:bg-pink-50/50 transition-colors"
             >
               <img

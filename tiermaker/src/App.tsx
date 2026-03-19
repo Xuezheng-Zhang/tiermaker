@@ -29,6 +29,38 @@ function createEmptyBoardState(): BoardState {
   };
 }
 
+function applyPlaceItem(
+  state: BoardState,
+  payload: { tierId: string; itemId: string; name: string; imageUrl: string }
+): BoardState {
+  const nextPlacedItems: BoardState["placedItems"] = {};
+  for (const [tierId, items] of Object.entries(state.placedItems)) {
+    nextPlacedItems[tierId] = items.filter((item) => item.id !== payload.itemId);
+  }
+  nextPlacedItems[payload.tierId] = [
+    ...(nextPlacedItems[payload.tierId] || []),
+    { id: payload.itemId, name: payload.name, imageUrl: payload.imageUrl },
+  ];
+
+  let nextIndex = state.currentIndex;
+  const [bankId, indexRaw] = payload.itemId.split(":");
+  const parsedIndex = Number(indexRaw);
+  if (
+    state.selectedBankId &&
+    bankId === state.selectedBankId &&
+    Number.isInteger(parsedIndex) &&
+    parsedIndex === state.currentIndex
+  ) {
+    nextIndex = state.currentIndex + 1;
+  }
+
+  return {
+    selectedBankId: state.selectedBankId,
+    currentIndex: nextIndex,
+    placedItems: nextPlacedItems,
+  };
+}
+
 function App() {
   const [nickname, setNickname] = useState("");
   const [boardState, setBoardState] = useState<BoardState>(createEmptyBoardState);
@@ -39,7 +71,6 @@ function App() {
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [loadingAction, setLoadingAction] = useState<"create" | "join" | "leave" | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const applyingRemoteRef = useRef(false);
 
   useEffect(() => {
     setNickname(getInitialNickname());
@@ -55,11 +86,7 @@ function App() {
     });
 
     socket.on("room_state", ({ state }: { state: BoardState }) => {
-      applyingRemoteRef.current = true;
       setBoardState(state);
-      window.setTimeout(() => {
-        applyingRemoteRef.current = false;
-      }, 0);
     });
 
     return () => {
@@ -74,10 +101,63 @@ function App() {
     return me?.nickname || nickname;
   }, [members, nickname, selfId]);
 
-  const handleBoardStateChange = (next: BoardState) => {
-    setBoardState(next);
-    if (!inRoom || applyingRemoteRef.current) return;
-    socketRef.current?.emit("update_room_state", { state: next });
+  const emitRoomOperation = (operation: unknown) => {
+    if (!inRoom) return;
+    socketRef.current?.emit("room_operation", operation);
+  };
+
+  const handleSelectBank = (bankId: string) => {
+    if (inRoom) {
+      emitRoomOperation({ type: "select_bank", bankId });
+      return;
+    }
+    setBoardState({
+      selectedBankId: bankId,
+      currentIndex: 0,
+      placedItems: {},
+    });
+  };
+
+  const handlePlaceCurrentItem = (payload: {
+    tierId: string;
+    itemId: string;
+    name: string;
+    imageUrl: string;
+  }) => {
+    if (inRoom) {
+      emitRoomOperation({ type: "place_item", ...payload });
+      return;
+    }
+    setBoardState((prev) => applyPlaceItem(prev, payload));
+  };
+
+  const handleMovePlacedItem = (payload: {
+    sourceTierId: string;
+    targetTierId: string;
+    itemId: string;
+    name: string;
+    imageUrl: string;
+  }) => {
+    if (payload.sourceTierId === payload.targetTierId) return;
+    if (inRoom) {
+      emitRoomOperation({
+        type: "move_item",
+        sourceTierId: payload.sourceTierId,
+        tierId: payload.targetTierId,
+        itemId: payload.itemId,
+        name: payload.name,
+        imageUrl: payload.imageUrl,
+      });
+      return;
+    }
+    setBoardState((prev) =>
+      applyPlaceItem(prev, {
+        tierId: payload.targetTierId,
+        itemId: payload.itemId,
+        name: payload.name,
+        imageUrl: payload.imageUrl,
+      })
+    );
   };
 
   const handleCreateRoom = () => {
@@ -205,7 +285,12 @@ function App() {
             </div>
           )}
           <div className="mt-2 sm:mt-0">
-            <TierList boardState={boardState} onBoardStateChange={handleBoardStateChange} />
+            <TierList
+              boardState={boardState}
+              onSelectBank={handleSelectBank}
+              onPlaceCurrentItem={handlePlaceCurrentItem}
+              onMovePlacedItem={handleMovePlacedItem}
+            />
           </div>
         </main>
 
