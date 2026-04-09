@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
+import { isProxiedDoubanPoster, resolvePosterImageUrl } from "../utils/posterUrl";
 
 interface TierListProps {
   boardState: BoardState;
@@ -46,6 +47,13 @@ export function TierList({
     selectedBank && currentIndex < selectedBank.items.length
       ? `${selectedBank.id}:${currentIndex}`
       : null;
+
+  const currentDisplaySrc = currentItem
+    ? resolvePosterImageUrl(currentItem.imageUrl)
+    : "";
+  const currentPosterProxied = currentItem
+    ? isProxiedDoubanPoster(currentDisplaySrc)
+    : false;
 
   const handleSelectBank = (bankId: string) => {
     onSelectBank(bankId);
@@ -219,6 +227,7 @@ export function TierList({
             <>
               <div
                 draggable
+                title={currentItem.name}
                 onDragStart={(e) => handleCurrentItemDragStart(e, currentItem, currentItemId!)}
                 onClick={handleTapCurrentItem}
                 className={`inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed overflow-hidden cursor-grab active:cursor-grabbing transition-colors ${
@@ -228,8 +237,10 @@ export function TierList({
                 }`}
               >
                 <img
-                  src={currentItem.imageUrl}
-                  alt=""
+                  src={currentDisplaySrc}
+                  alt={currentItem.name}
+                  title={currentItem.name}
+                  crossOrigin={currentPosterProxied ? "anonymous" : undefined}
                   className="w-full aspect-square object-cover pointer-events-none"
                   draggable={false}
                 />

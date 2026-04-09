@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TierRow as TierRowType, PlacedItem as PlacedItemType } from "../types";
+import { isProxiedDoubanPoster, resolvePosterImageUrl } from "../utils/posterUrl";
 
 interface TierRowProps {
   tier: TierRowType;
@@ -122,10 +123,14 @@ export function TierRow({
         onClick={onTapTier}
       >
         {placedItems.length > 0 ? (
-          placedItems.map((item) => (
+          placedItems.map((item) => {
+            const displaySrc = resolvePosterImageUrl(item.imageUrl);
+            const proxied = isProxiedDoubanPoster(displaySrc);
+            return (
             <div
               key={item.id}
               draggable
+              title={item.name}
               onDragStart={(e) => handlePlacedItemDragStart(e, item)}
               onClick={(e) => {
                 e.stopPropagation();
@@ -138,13 +143,16 @@ export function TierRow({
               }`}
             >
               <img
-                src={item.imageUrl}
-                alt=""
+                src={displaySrc}
+                alt={item.name}
+                title={item.name}
+                crossOrigin={proxied ? "anonymous" : undefined}
                 className="w-full aspect-square object-cover pointer-events-none"
                 draggable={false}
               />
             </div>
-          ))
+            );
+          })
         ) : null}
       </div>
     </div>

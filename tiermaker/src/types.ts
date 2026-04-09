@@ -1,3 +1,5 @@
+import { DOUBAN_TOP250_ITEMS } from "./data/doubanTop250.generated";
+
 export interface TierRow {
   id: string;
   label: string;
@@ -141,6 +143,11 @@ export const QUESTION_BANKS: QuestionBank[] = [
       { name: "馄饨/水饺", imageUrl: "https://images.pexels.com/photos/955137/pexels-photo-955137.jpeg?auto=compress&cs=tinysrgb&w=300" },
       { name: "炸油条/碳水类", imageUrl: "https://images.pexels.com/photos/12836274/pexels-photo-12836274.jpeg?auto=compress&cs=tinysrgb&w=300" },
     ],
+  },
+  {
+    id: "douban-top250",
+    name: "豆瓣Top250",
+    items: DOUBAN_TOP250_ITEMS,
   },
 ];
 

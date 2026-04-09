@@ -10,6 +10,10 @@ const io = new Server(httpServer, {
 
 const PORT = Number(process.env.PORT || 3001);
 
+const FETCH_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const DOUBAN_REFERER = "https://movie.douban.com/";
+
 /**
  * @typedef {{ selectedBankId: string | null, currentIndex: number, placedItems: Record<string, {id:string,name:string,imageUrl:string}[]> }} RoomBoardState
  * @typedef {{ id: string, nickname: string }} RoomMember
@@ -191,6 +195,57 @@ io.on("connection", (socket) => {
       emitRoomInfo(room);
     }
   });
+});
+
+app.get("/poster-proxy", async (req, res) => {
+  const raw = req.query.u;
+  const target = typeof raw === "string" ? raw.trim() : "";
+  if (!target) {
+    res.status(400).send("missing u");
+    return;
+  }
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch {
+    res.status(400).send("invalid url");
+    return;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    res.status(400).send("invalid protocol");
+    return;
+  }
+  if (!/^img\d+\.doubanio\.com$/i.test(parsed.hostname)) {
+    res.status(400).send("host not allowed");
+    return;
+  }
+  if (!parsed.pathname.includes("/view/photo/")) {
+    res.status(400).send("path not allowed");
+    return;
+  }
+
+  try {
+    const upstream = await fetch(target, {
+      headers: {
+        "User-Agent": FETCH_UA,
+        Referer: DOUBAN_REFERER,
+        Accept: "image/*,*/*;q=0.8",
+      },
+    });
+    if (!upstream.ok) {
+      res.status(upstream.status).send("upstream error");
+      return;
+    }
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    const ct = upstream.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", ct);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.send(buf);
+  } catch (err) {
+    console.error("poster-proxy", err);
+    res.status(502).send("proxy failed");
+  }
 });
 
 app.get("/health", (_req, res) => {
