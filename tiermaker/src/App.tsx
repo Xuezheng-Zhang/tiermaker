@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { TierList } from "./components/TierList";
-import type { BoardState, RoomMember } from "./types";
+import { useDragAutoScroll } from "./hooks/useDragAutoScroll";
+import type { BoardState, PlacedItem, RoomMember } from "./types";
 
 const STORAGE_KEY_NICKNAME = "tiermaker_nickname";
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
@@ -61,7 +62,56 @@ function applyPlaceItem(
   };
 }
 
+function applyMoveItem(
+  state: BoardState,
+  payload: {
+    itemId: string;
+    name: string;
+    imageUrl: string;
+    targetTierId: string;
+    anchorItemId?: string | null;
+    placement?: "before" | "after";
+  }
+): BoardState {
+  let removed: PlacedItem | null = null;
+  const nextPlacedItems: BoardState["placedItems"] = {};
+  for (const [tid, items] of Object.entries(state.placedItems)) {
+    nextPlacedItems[tid] = [];
+    for (const i of items) {
+      if (i.id === payload.itemId) {
+        removed = i;
+        continue;
+      }
+      nextPlacedItems[tid].push(i);
+    }
+  }
+  if (!removed) removed = { id: payload.itemId, name: payload.name, imageUrl: payload.imageUrl };
+
+  const list = [...(nextPlacedItems[payload.targetTierId] || [])];
+  const anchor = payload.anchorItemId;
+  const placement = payload.placement === "after" ? "after" : "before";
+
+  if (anchor == null || anchor === "") {
+    list.push(removed);
+  } else {
+    const idx = list.findIndex((i) => i.id === anchor);
+    if (idx < 0) list.push(removed);
+    else {
+      const pos = placement === "after" ? idx + 1 : idx;
+      list.splice(pos, 0, removed);
+    }
+  }
+  nextPlacedItems[payload.targetTierId] = list;
+  return {
+    selectedBankId: state.selectedBankId,
+    currentIndex: state.currentIndex,
+    placedItems: nextPlacedItems,
+  };
+}
+
 function App() {
+  useDragAutoScroll();
+
   const [nickname, setNickname] = useState("");
   const [boardState, setBoardState] = useState<BoardState>(createEmptyBoardState);
   const [roomCode, setRoomCode] = useState("");
@@ -137,25 +187,29 @@ function App() {
     itemId: string;
     name: string;
     imageUrl: string;
+    anchorItemId?: string | null;
+    placement?: "before" | "after";
   }) => {
-    if (payload.sourceTierId === payload.targetTierId) return;
     if (inRoom) {
       emitRoomOperation({
         type: "move_item",
-        sourceTierId: payload.sourceTierId,
         tierId: payload.targetTierId,
         itemId: payload.itemId,
         name: payload.name,
         imageUrl: payload.imageUrl,
+        anchorItemId: payload.anchorItemId ?? null,
+        placement: payload.placement,
       });
       return;
     }
     setBoardState((prev) =>
-      applyPlaceItem(prev, {
-        tierId: payload.targetTierId,
+      applyMoveItem(prev, {
         itemId: payload.itemId,
         name: payload.name,
         imageUrl: payload.imageUrl,
+        targetTierId: payload.targetTierId,
+        anchorItemId: payload.anchorItemId,
+        placement: payload.placement,
       })
     );
   };
@@ -223,9 +277,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#e8e8e8]">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-center text-2xl font-bold text-zinc-800">
+      <div className="mx-auto w-full max-w-[min(100%,1680px)] px-4 py-6 sm:px-6 lg:px-10 xl:px-14 lg:py-10">
+        <header className="mb-6 lg:mb-10">
+          <h1 className="text-center text-2xl font-bold text-zinc-800 sm:text-3xl lg:text-[1.75rem]">
             从夯到拉生成器
           </h1>
           <div className="mt-4 rounded-xl border border-zinc-300 bg-white p-3 text-sm text-zinc-700">

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
@@ -15,6 +15,8 @@ interface TierListProps {
     itemId: string;
     name: string;
     imageUrl: string;
+    anchorItemId?: string | null;
+    placement?: "before" | "after";
   }) => void;
 }
 
@@ -33,27 +35,29 @@ export function TierList({
   const [exporting, setExporting] = useState(false);
   const [pendingTouchDrop, setPendingTouchDrop] = useState<DropData | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const { selectedBankId, currentIndex, placedItems } = boardState;
+  const { selectedBankId, placedItems } = boardState;
+
+  const totalPlacedCount = useMemo(
+    () => Object.values(placedItems).reduce((n, arr) => n + (arr?.length ?? 0), 0),
+    [placedItems]
+  );
 
   const selectedBank = selectedBankId
     ? QUESTION_BANKS.find((b) => b.id === selectedBankId)
     : null;
-  const currentItem: QuestionBankItem | null =
-    selectedBank && currentIndex < selectedBank.items.length
-      ? selectedBank.items[currentIndex]
-      : null;
-  const hasMore = selectedBank && currentIndex < selectedBank.items.length;
-  const currentItemId =
-    selectedBank && currentIndex < selectedBank.items.length
-      ? `${selectedBank.id}:${currentIndex}`
-      : null;
 
-  const currentDisplaySrc = currentItem
-    ? resolvePosterImageUrl(currentItem.imageUrl)
-    : "";
-  const currentPosterProxied = currentItem
-    ? isProxiedDoubanPoster(currentDisplaySrc)
-    : false;
+  const placedIdSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const arr of Object.values(placedItems)) {
+      for (const p of arr || []) s.add(p.id);
+    }
+    return s;
+  }, [placedItems]);
+
+  const allBankItemsPlaced = useMemo(() => {
+    if (!selectedBank) return false;
+    return selectedBank.items.every((_, index) => placedIdSet.has(`${selectedBank.id}:${index}`));
+  }, [selectedBank, placedIdSet]);
 
   const handleSelectBank = (bankId: string) => {
     onSelectBank(bankId);
@@ -94,7 +98,6 @@ export function TierList({
       playDropSound();
     } else {
       const { sourceTierId, itemId, name, imageUrl } = data;
-      if (sourceTierId === tierId) return;
       onMovePlacedItem({
         sourceTierId,
         targetTierId: tierId,
@@ -129,7 +132,8 @@ export function TierList({
     setExporting(true);
     try {
       const canvas = await html2canvas(tableRef.current, {
-        scale: 2,
+        // 图很多时 2x 全屏截图内存与耗时暴涨，自动降采样
+        scale: totalPlacedCount > 48 ? 1 : 2,
         useCORS: true,
         backgroundColor: "#333",
         logging: false,
@@ -145,13 +149,12 @@ export function TierList({
     }
   };
 
-  const handleTapCurrentItem = () => {
-    if (!currentItem || !currentItemId) return;
+  const handleTapBankItem = (item: QuestionBankItem, itemId: string) => {
     setPendingTouchDrop({
       type: "current",
-      itemId: currentItemId,
-      name: currentItem.name,
-      imageUrl: currentItem.imageUrl,
+      itemId,
+      name: item.name,
+      imageUrl: item.imageUrl,
     });
   };
 
@@ -216,44 +219,77 @@ export function TierList({
             onTapTier={() => handleTapTier(tier.id)}
             onTapPlacedItem={(item) => handleTapPlacedItem(tier.id, item)}
             selectedTouchItemId={pendingTouchDrop?.itemId ?? null}
+            onMoveWithAnchor={(payload) => {
+              onMovePlacedItem({
+                sourceTierId: payload.sourceTierId,
+                targetTierId: payload.targetTierId,
+                itemId: payload.itemId,
+                name: payload.name,
+                imageUrl: payload.imageUrl,
+                anchorItemId: payload.anchorItemId,
+                placement: payload.placement,
+              });
+              playDropSound();
+              setPendingTouchDrop(null);
+            }}
           />
         ))}
       </div>
 
-      {/* 当前题目：拖到对应等级后显示下一个 */}
+      {/* 选题库后：等级行下方展示本题库全部图片 */}
       {selectedBank && (
-        <div className="mt-4">
-          {hasMore && currentItem ? (
-            <>
-              <div
-                draggable
-                title={currentItem.name}
-                onDragStart={(e) => handleCurrentItemDragStart(e, currentItem, currentItemId!)}
-                onClick={handleTapCurrentItem}
-                className={`inline-flex items-center justify-center w-[160px] rounded-lg bg-white border-2 border-dashed overflow-hidden cursor-grab active:cursor-grabbing transition-colors ${
-                  pendingTouchDrop?.type === "current"
-                    ? "border-pink-500 bg-pink-50/70"
-                    : "border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50"
-                }`}
-              >
-                <img
-                  src={currentDisplaySrc}
-                  alt={currentItem.name}
-                  title={currentItem.name}
-                  crossOrigin={currentPosterProxied ? "anonymous" : undefined}
-                  className="w-full aspect-square object-cover pointer-events-none"
-                  draggable={false}
-                />
-              </div>
-              {isTouchDevice && (
-                <div className="mt-2 text-xs text-zinc-500">
-                  触屏操作：先点图片，再点目标等级行即可放置/移动
+        <div className="mt-5">
+          <h3 className="text-sm font-medium text-zinc-700 mb-2">
+            本题库图片
+            <span className="ml-2 font-normal text-zinc-500">
+              （{selectedBank.items.length} 张，拖到上方等级行）
+            </span>
+          </h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
+            {selectedBank.items.map((item, index) => {
+              const itemId = `${selectedBank.id}:${index}`;
+              const displaySrc = resolvePosterImageUrl(item.imageUrl);
+              const proxied = isProxiedDoubanPoster(displaySrc);
+              const isSelectedTouch =
+                pendingTouchDrop?.type === "current" && pendingTouchDrop.itemId === itemId;
+              const alreadyInTier = placedIdSet.has(itemId);
+              return (
+                <div
+                  key={itemId}
+                  draggable
+                  title={item.name}
+                  onDragStart={(e) => handleCurrentItemDragStart(e, item, itemId)}
+                  onClick={() => handleTapBankItem(item, itemId)}
+                  className={`rounded-lg border-2 overflow-hidden cursor-grab active:cursor-grabbing transition-colors aspect-square ${
+                    isSelectedTouch
+                      ? "border-pink-500 bg-pink-50/90 ring-2 ring-pink-300"
+                      : alreadyInTier
+                        ? "border-zinc-200 opacity-55"
+                        : "border-zinc-300 border-dashed bg-white hover:border-pink-400 hover:bg-pink-50/50"
+                  }`}
+                >
+                  <img
+                    src={displaySrc}
+                    alt={item.name}
+                    title={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    crossOrigin={proxied ? "anonymous" : undefined}
+                    className="h-full w-full object-cover pointer-events-none"
+                    draggable={false}
+                  />
                 </div>
-              )}
-            </>
-          ) : hasMore ? null : (
-            <div className="py-3 px-5 rounded-lg bg-zinc-100 text-zinc-500 text-sm">
-              本题库已排完，可重新选择题库或切换其他题库继续
+              );
+            })}
+          </div>
+          {isTouchDevice && (
+            <div className="mt-2 text-xs text-zinc-500">
+              触屏：先点一张图，再点上方等级行即可放置；已放入等级的会变淡，可从等级行拖回调整。
+            </div>
+          )}
+          {allBankItemsPlaced && (
+            <div className="mt-3 rounded-lg bg-zinc-100 py-2.5 px-4 text-center text-sm text-zinc-500">
+              本题库已全部拖入等级，可切换其他题库或继续调整等级内顺序
             </div>
           )}
         </div>

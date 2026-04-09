@@ -86,6 +86,49 @@ function applyPlaceItem(state, payload) {
   };
 }
 
+function applyMoveItem(state, payload) {
+  let removed = null;
+  const nextPlacedItems = {};
+  for (const [tid, items] of Object.entries(state.placedItems || {})) {
+    nextPlacedItems[tid] = [];
+    for (const i of items) {
+      if (i.id === payload.itemId) {
+        removed = i;
+        continue;
+      }
+      nextPlacedItems[tid].push(i);
+    }
+  }
+  if (!removed) {
+    removed = {
+      id: payload.itemId,
+      name: payload.name,
+      imageUrl: payload.imageUrl,
+    };
+  }
+
+  const list = [...(nextPlacedItems[payload.targetTierId] || [])];
+  const anchor = payload.anchorItemId;
+  const placement = payload.placement === "after" ? "after" : "before";
+
+  if (anchor == null || anchor === "") {
+    list.push(removed);
+  } else {
+    const idx = list.findIndex((i) => i.id === anchor);
+    if (idx < 0) list.push(removed);
+    else {
+      const pos = placement === "after" ? idx + 1 : idx;
+      list.splice(pos, 0, removed);
+    }
+  }
+  nextPlacedItems[payload.targetTierId] = list;
+  return {
+    selectedBankId: state.selectedBankId,
+    currentIndex: state.currentIndex,
+    placedItems: nextPlacedItems,
+  };
+}
+
 io.on("connection", (socket) => {
   socket.on("create_room", ({ nickname }, ack) => {
     const code = generateRoomCode();
@@ -171,7 +214,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (operation.type === "place_item" || operation.type === "move_item") {
+    if (operation.type === "place_item") {
       const tierId = String(operation.tierId || "").trim();
       const itemId = String(operation.itemId || "").trim();
       const name = String(operation.name || "").trim();
@@ -179,7 +222,33 @@ io.on("connection", (socket) => {
       if (!tierId || !itemId || !name || !imageUrl) return;
       room.state = applyPlaceItem(room.state, { tierId, itemId, name, imageUrl });
       emitRoomState(room);
+      return;
     }
+
+    if (operation.type === "move_item") {
+      const tierId = String(operation.tierId || "").trim();
+      const itemId = String(operation.itemId || "").trim();
+      const name = String(operation.name || "").trim();
+      const imageUrl = String(operation.imageUrl || "").trim();
+      if (!tierId || !itemId || !name || !imageUrl) return;
+      const anchorRaw = operation.anchorItemId;
+      const anchorItemId =
+        anchorRaw != null && String(anchorRaw).trim() !== ""
+          ? String(anchorRaw).trim()
+          : null;
+      const placement = operation.placement === "after" ? "after" : "before";
+      room.state = applyMoveItem(room.state, {
+        itemId,
+        name,
+        imageUrl,
+        targetTierId: tierId,
+        anchorItemId,
+        placement,
+      });
+      emitRoomState(room);
+      return;
+    }
+
   });
 
   socket.on("disconnect", () => {

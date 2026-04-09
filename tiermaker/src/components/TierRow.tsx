@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { TierRow as TierRowType, PlacedItem as PlacedItemType } from "../types";
 import { isProxiedDoubanPoster, resolvePosterImageUrl } from "../utils/posterUrl";
 
@@ -13,6 +13,15 @@ interface TierRowProps {
   onTapTier?: () => void;
   onTapPlacedItem?: (item: PlacedItemType) => void;
   selectedTouchItemId?: string | null;
+  onMoveWithAnchor?: (payload: {
+    sourceTierId: string;
+    targetTierId: string;
+    itemId: string;
+    name: string;
+    imageUrl: string;
+    anchorItemId: string;
+    placement: "before" | "after";
+  }) => void;
 }
 
 export function TierRow({
@@ -22,16 +31,24 @@ export function TierRow({
   onTapTier,
   onTapPlacedItem,
   selectedTouchItemId,
+  onMoveWithAnchor,
 }: TierRowProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  /** 避免 dragOver 每秒触发数百次导致整行反复 setState（图多时会明显卡顿） */
+  const dragOverRowRef = useRef(false);
 
   type DropData =
     | { type: "current"; itemId: string; name: string; imageUrl: string }
     | { type: "move"; sourceTierId: string; itemId: string; name: string; imageUrl: string };
 
+  const clearRowDragOver = () => {
+    dragOverRowRef.current = false;
+    setIsDragOver(false);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    clearRowDragOver();
     const raw = e.dataTransfer.getData("text/plain");
     if (!raw) return;
     let data: DropData;
@@ -95,10 +112,104 @@ export function TierRow({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
+    if (!dragOverRowRef.current) {
+      dragOverRowRef.current = true;
+      setIsDragOver(true);
+    }
   };
 
-  const handleDragLeave = () => setIsDragOver(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const { clientX: x, clientY: y } = e;
+    const pad = 6;
+    if (x > rect.left + pad && x < rect.right - pad && y > rect.top + pad && y < rect.bottom - pad) {
+      return;
+    }
+    clearRowDragOver();
+  };
+
+  const parseMovePayload = (raw: string): DropData | null => {
+    try {
+      const parsed = JSON.parse(raw) as {
+        type?: string;
+        sourceTierId?: string;
+        itemId?: string;
+        name?: string;
+        imageUrl?: string;
+      };
+      if (
+        parsed?.type === "move" &&
+        parsed.sourceTierId != null &&
+        parsed.itemId != null &&
+        parsed.name != null &&
+        parsed.imageUrl != null
+      ) {
+        return {
+          type: "move",
+          sourceTierId: parsed.sourceTierId,
+          itemId: parsed.itemId,
+          name: parsed.name,
+          imageUrl: parsed.imageUrl,
+        };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const handlePlacedItemDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handlePlacedItemDrop = (e: React.DragEvent, targetItem: PlacedItemType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    clearRowDragOver();
+    const raw = e.dataTransfer.getData("text/plain");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        type?: string;
+        itemId?: string;
+        name?: string;
+        imageUrl?: string;
+      };
+      if (
+        parsed?.type === "current" &&
+        parsed.itemId != null &&
+        parsed.name != null &&
+        parsed.imageUrl != null
+      ) {
+        onDrop({
+          type: "current",
+          itemId: parsed.itemId,
+          name: parsed.name,
+          imageUrl: parsed.imageUrl,
+        });
+        return;
+      }
+    } catch {
+      return;
+    }
+    const data = parseMovePayload(raw);
+    if (!data || data.type !== "move") return;
+    if (data.itemId === targetItem.id) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const before = e.clientX < rect.left + rect.width / 2;
+    onMoveWithAnchor?.({
+      sourceTierId: data.sourceTierId,
+      targetTierId: tier.id,
+      itemId: data.itemId,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      anchorItemId: targetItem.id,
+      placement: before ? "before" : "after",
+    });
+  };
 
   return (
     <div className="flex border-b-2 border-[#111] last:border-b-0">
@@ -116,7 +227,8 @@ export function TierRow({
 
       {/* 右侧：可放置区域，显示已拖入的项目 */}
       <div
-        className={`flex-1 min-h-[72px] bg-[#333] flex flex-wrap items-center justify-start gap-2 p-2 ${isDragOver ? "ring-2 ring-pink-400 ring-inset bg-[#3d3d3d]" : ""}`}
+        style={{ contain: "layout paint" }}
+        className={`flex-1 min-h-[72px] bg-[#333] flex flex-wrap content-start items-center justify-start gap-2 p-2 ${isDragOver ? "ring-2 ring-pink-400 ring-inset bg-[#3d3d3d]" : ""}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -132,6 +244,8 @@ export function TierRow({
               draggable
               title={item.name}
               onDragStart={(e) => handlePlacedItemDragStart(e, item)}
+              onDragOver={handlePlacedItemDragOver}
+              onDrop={(e) => handlePlacedItemDrop(e, item)}
               onClick={(e) => {
                 e.stopPropagation();
                 onTapPlacedItem?.(item);
@@ -146,6 +260,8 @@ export function TierRow({
                 src={displaySrc}
                 alt={item.name}
                 title={item.name}
+                loading="lazy"
+                decoding="async"
                 crossOrigin={proxied ? "anonymous" : undefined}
                 className="w-full aspect-square object-cover pointer-events-none"
                 draggable={false}
