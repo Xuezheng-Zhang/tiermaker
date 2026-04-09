@@ -1,4 +1,5 @@
 import { DOUBAN_TOP250_ITEMS } from "./data/doubanTop250.generated";
+import { RYM_TOP100_ITEMS } from "./data/rymTop100.generated";
 
 export interface TierRow {
   id: string;
@@ -148,6 +149,11 @@ export const QUESTION_BANKS: QuestionBank[] = [
     id: "douban-top250",
     name: "豆瓣Top250",
     items: DOUBAN_TOP250_ITEMS,
+  },
+  {
+    id: "rym-top100",
+    name: "RYM 史上专辑 Top100",
+    items: RYM_TOP100_ITEMS,
   },
 ];
 
