@@ -59,6 +59,18 @@ export function TierList({
     return selectedBank.items.every((_, index) => placedIdSet.has(`${selectedBank.id}:${index}`));
   }, [selectedBank, placedIdSet]);
 
+  /** 本题库尚未拖入等级的条目（已拖入的从下方移除） */
+  const bankItemsStillInPool = useMemo(() => {
+    if (!selectedBank) return [];
+    return selectedBank.items
+      .map((item, index) => ({
+        item,
+        index,
+        itemId: `${selectedBank.id}:${index}` as const,
+      }))
+      .filter(({ itemId }) => !placedIdSet.has(itemId));
+  }, [selectedBank, placedIdSet]);
+
   const handleSelectBank = (bankId: string) => {
     onSelectBank(bankId);
   };
@@ -242,17 +254,15 @@ export function TierList({
           <h3 className="text-sm font-medium text-zinc-700 mb-2">
             本题库图片
             <span className="ml-2 font-normal text-zinc-500">
-              （{selectedBank.items.length} 张，拖到上方等级行）
+              （剩余 {bankItemsStillInPool.length} / {selectedBank.items.length} 张，拖到上方等级行）
             </span>
           </h3>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-3">
-            {selectedBank.items.map((item, index) => {
-              const itemId = `${selectedBank.id}:${index}`;
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 min-h-[4.5rem]">
+            {bankItemsStillInPool.map(({ item, itemId }) => {
               const displaySrc = resolvePosterImageUrl(item.imageUrl);
               const proxied = isProxiedDoubanPoster(displaySrc);
               const isSelectedTouch =
                 pendingTouchDrop?.type === "current" && pendingTouchDrop.itemId === itemId;
-              const alreadyInTier = placedIdSet.has(itemId);
               return (
                 <div
                   key={itemId}
@@ -263,9 +273,7 @@ export function TierList({
                   className={`rounded-lg border-2 overflow-hidden cursor-grab active:cursor-grabbing transition-colors aspect-square ${
                     isSelectedTouch
                       ? "border-pink-500 bg-pink-50/90 ring-2 ring-pink-300"
-                      : alreadyInTier
-                        ? "border-zinc-200 opacity-55"
-                        : "border-zinc-300 border-dashed bg-white hover:border-pink-400 hover:bg-pink-50/50"
+                      : "border-zinc-300 border-dashed bg-white hover:border-pink-400 hover:bg-pink-50/50"
                   }`}
                 >
                   <img
@@ -284,7 +292,7 @@ export function TierList({
           </div>
           {isTouchDevice && (
             <div className="mt-2 text-xs text-zinc-500">
-              触屏：先点一张图，再点上方等级行即可放置；已放入等级的会变淡，可从等级行拖回调整。
+              触屏：先点一张图，再点上方等级行即可放置；拖入等级后该图会从下方消失，可在等级行内拖动调整。
             </div>
           )}
           {allBankItemsPlaced && (
