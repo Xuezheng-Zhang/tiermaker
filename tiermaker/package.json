@@ -12,6 +12,7 @@
     "fetch:douban": "node scripts/fetch-douban-top250.mjs",
     "download:douban": "node scripts/download-douban-posters.mjs",
     "download:rym": "node scripts/download-rym-top100.mjs",
+    "download:china-provinces": "node scripts/download-china-provinces-wiki.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

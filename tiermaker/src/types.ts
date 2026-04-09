@@ -1,6 +1,7 @@
 import { DOUBAN_TOP250_ITEMS } from "./data/doubanTop250.generated";
 import { RYM_TOP100_ITEMS } from "./data/rymTop100.generated";
 import { COUNTRY_FLAGS_100_ITEMS } from "./data/countryFlags100.generated";
+import { CHINA_PROVINCES_34_ITEMS } from "./data/chinaProvinces34.generated";
 
 export interface TierRow {
   id: string;
@@ -185,6 +186,11 @@ export const QUESTION_BANKS: QuestionBank[] = [
     id: "country-flags-100",
     name: "知名国家",
     items: COUNTRY_FLAGS_100_ITEMS,
+  },
+  {
+    id: "china-provinces-34",
+    name: "中国省份",
+    items: CHINA_PROVINCES_34_ITEMS,
   },
 ];
 
