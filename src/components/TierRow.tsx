@@ -255,23 +255,31 @@ export function TierRow({
                 e.stopPropagation();
                 onTapPlacedItem?.(item);
               }}
-              className={`flex-shrink-0 w-[96px] rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-colors ${
+              className={`relative w-[96px] flex-shrink-0 cursor-grab overflow-hidden rounded-lg transition-colors active:cursor-grabbing ${
                 selectedTouchItemId === item.id
                   ? "ring-2 ring-pink-400 bg-white/25"
                   : "bg-white/10 hover:bg-white/20"
               }`}
             >
-              <img
-                src={displaySrc}
-                alt={item.name}
-                title={item.name}
-                referrerPolicy={refPolicy}
-                loading="lazy"
-                decoding="async"
-                crossOrigin={proxied ? "anonymous" : undefined}
-                className="w-full aspect-square object-cover pointer-events-none"
-                draggable={false}
-              />
+              <div className="relative aspect-square w-full">
+                <img
+                  src={displaySrc}
+                  alt={item.name}
+                  title={item.name}
+                  referrerPolicy={refPolicy}
+                  loading="lazy"
+                  decoding="async"
+                  crossOrigin={proxied ? "anonymous" : undefined}
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  draggable={false}
+                />
+                <p
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2 sm:hidden"
+                  aria-hidden
+                >
+                  {item.name}
+                </p>
+              </div>
             </div>
             );
           })

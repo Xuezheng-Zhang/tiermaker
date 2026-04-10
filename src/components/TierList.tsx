@@ -279,10 +279,10 @@ export function TierList({
                   title={item.name}
                   onDragStart={(e) => handleCurrentItemDragStart(e, item, itemId)}
                   onClick={() => handleTapBankItem(item, itemId)}
-                  className={`rounded-lg border-2 overflow-hidden cursor-grab active:cursor-grabbing transition-colors aspect-square ${
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 cursor-grab border-dashed transition-colors active:cursor-grabbing ${
                     isSelectedTouch
                       ? "border-pink-500 bg-pink-50/90 ring-2 ring-pink-300"
-                      : "border-zinc-300 border-dashed bg-white hover:border-pink-400 hover:bg-pink-50/50"
+                      : "border-zinc-300 bg-white hover:border-pink-400 hover:bg-pink-50/50"
                   }`}
                 >
                   <img
@@ -293,9 +293,16 @@ export function TierList({
                     loading="lazy"
                     decoding="async"
                     crossOrigin={proxied ? "anonymous" : undefined}
-                    className="h-full w-full object-cover pointer-events-none"
+                    className="pointer-events-none absolute inset-0 h-full w-full object-cover"
                     draggable={false}
                   />
+                  {/* 小屏无悬停：底部显示名称 */}
+                  <p
+                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2 sm:hidden"
+                    aria-hidden
+                  >
+                    {item.name}
+                  </p>
                 </div>
               );
             })}
