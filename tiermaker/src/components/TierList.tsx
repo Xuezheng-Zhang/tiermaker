@@ -5,7 +5,7 @@ import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../ty
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
 import {
   imageReferrerPolicyForUrl,
-  isProxiedDoubanPoster,
+  isProxiedTierImage,
   resolvePosterImageUrl,
 } from "../utils/posterUrl";
 
@@ -160,6 +160,11 @@ export function TierList({
       link.click();
     } catch (err) {
       console.error("导出图片失败:", err);
+      const msg =
+        err instanceof Error && /taint|insecure|SecurityError/i.test(err.message)
+          ? "导出失败：外链图片受浏览器跨域限制。请用 npm run dev 同时启动前端与联机服务（端口 3001），以便经代理加载图片后再导出。"
+          : `导出失败：${err instanceof Error ? err.message : String(err)}`;
+      window.alert(msg);
     } finally {
       setExporting(false);
     }
@@ -264,7 +269,7 @@ export function TierList({
           <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 rounded-xl border border-zinc-200 bg-zinc-50/80 p-3 min-h-[4.5rem]">
             {bankItemsStillInPool.map(({ item, itemId }) => {
               const displaySrc = resolvePosterImageUrl(item.imageUrl);
-              const proxied = isProxiedDoubanPoster(displaySrc);
+              const proxied = isProxiedTierImage(displaySrc);
               const refPolicy = imageReferrerPolicyForUrl(displaySrc);
               const isSelectedTouch =
                 pendingTouchDrop?.type === "current" && pendingTouchDrop.itemId === itemId;

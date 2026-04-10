@@ -317,6 +317,65 @@ app.get("/poster-proxy", async (req, res) => {
   }
 });
 
+/** 百度百科 / 维基等外链图：浏览器直接 <img> 无 CORS，html2canvas 导出时 canvas 被污染导致 toDataURL 失败。经同源代理并带 ACAO，配合 img crossOrigin=anonymous 可导出。 */
+function isImageProxyAllowedHost(hostname) {
+  const h = String(hostname).toLowerCase();
+  return (
+    h === "bkimg.cdn.bcebos.com" ||
+    h === "upload.wikimedia.org" ||
+    h === "images.pexels.com" ||
+    h === "loremflickr.com"
+  );
+}
+
+app.get("/image-proxy", async (req, res) => {
+  const raw = req.query.u;
+  const target = typeof raw === "string" ? raw.trim() : "";
+  if (!target) {
+    res.status(400).send("missing u");
+    return;
+  }
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch {
+    res.status(400).send("invalid url");
+    return;
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    res.status(400).send("invalid protocol");
+    return;
+  }
+  if (!isImageProxyAllowedHost(parsed.hostname)) {
+    res.status(400).send("host not allowed");
+    return;
+  }
+
+  try {
+    const headers = {
+      "User-Agent": FETCH_UA,
+      Accept: "image/*,*/*;q=0.8",
+    };
+    if (parsed.hostname === "bkimg.cdn.bcebos.com") {
+      headers.Referer = "https://baike.baidu.com/";
+    }
+    const upstream = await fetch(target, { headers });
+    if (!upstream.ok) {
+      res.status(upstream.status).send("upstream error");
+      return;
+    }
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    const ct = upstream.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", ct);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.send(buf);
+  } catch (err) {
+    console.error("image-proxy", err);
+    res.status(502).send("proxy failed");
+  }
+});
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true, rooms: rooms.size });
 });

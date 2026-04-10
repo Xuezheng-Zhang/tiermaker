@@ -16,22 +16,40 @@ export function resolvePosterImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
   try {
     const u = new URL(imageUrl);
-    if (!/^img\d+\.doubanio\.com$/i.test(u.hostname)) return imageUrl;
-    if (!u.pathname.includes("/view/photo/")) return imageUrl;
     if (u.protocol !== "https:" && u.protocol !== "http:") return imageUrl;
-    return `${apiOrigin()}/poster-proxy?u=${encodeURIComponent(imageUrl)}`;
+
+    if (/^img\d+\.doubanio\.com$/i.test(u.hostname) && u.pathname.includes("/view/photo/")) {
+      return `${apiOrigin()}/poster-proxy?u=${encodeURIComponent(imageUrl)}`;
+    }
+
+    if (
+      u.hostname === "bkimg.cdn.bcebos.com" ||
+      u.hostname === "upload.wikimedia.org" ||
+      u.hostname === "images.pexels.com" ||
+      u.hostname === "loremflickr.com"
+    ) {
+      return `${apiOrigin()}/image-proxy?u=${encodeURIComponent(imageUrl)}`;
+    }
+
+    return imageUrl;
   } catch {
     return imageUrl;
   }
 }
 
+/** 经本服务代理的图片（可设 crossOrigin 供 html2canvas 导出） */
+export function isProxiedTierImage(src: string): boolean {
+  return src.includes("/poster-proxy?") || src.includes("/image-proxy?");
+}
+
+/** @deprecated 使用 isProxiedTierImage */
 export function isProxiedDoubanPoster(src: string): boolean {
-  return src.includes("/poster-proxy?");
+  return isProxiedTierImage(src);
 }
 
 /**
- * 百度百科 bkimg CDN 会校验 Referer：从 localhost / 任意第三方页面嵌图时带上的 Referer 会 403。
- * 对这类 URL 使用 no-referrer，图片请求不携带 Referer 即可正常显示（与 curl 无 -e 行为一致）。
+ * 经 image-proxy 后不再直连 bkimg，一般无需 no-referrer。
+ * 仍直连 bkimg 时（未启后端代理）避免 Referer 导致 403。
  */
 export function imageReferrerPolicyForUrl(url: string): "no-referrer" | undefined {
   if (!url) return undefined;
