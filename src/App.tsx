@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { TierList } from "./components/TierList";
 import { useDragAutoScroll } from "./hooks/useDragAutoScroll";
@@ -121,12 +121,29 @@ function App() {
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [loadingAction, setLoadingAction] = useState<"create" | "join" | "leave" | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [joinRoomToast, setJoinRoomToast] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const copySuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const joinRoomToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selfIdRef = useRef("");
+  const prevRoomMemberIdsRef = useRef<Set<string>>(new Set());
+
+  const showJoinRoomToast = useCallback((message: string) => {
+    setJoinRoomToast(message);
+    if (joinRoomToastTimerRef.current) clearTimeout(joinRoomToastTimerRef.current);
+    joinRoomToastTimerRef.current = setTimeout(() => {
+      setJoinRoomToast(null);
+      joinRoomToastTimerRef.current = null;
+    }, 3000);
+  }, []);
 
   useEffect(() => {
     setNickname(getInitialNickname());
   }, []);
+
+  useEffect(() => {
+    selfIdRef.current = selfId;
+  }, [selfId]);
 
   useEffect(() => {
     if (!nickname) return;
@@ -141,6 +158,21 @@ function App() {
     socketRef.current = socket;
 
     socket.on("room_members", ({ members: nextMembers }: { members: RoomMember[] }) => {
+      const prev = prevRoomMemberIdsRef.current;
+      const self = selfIdRef.current;
+
+      if (prev.size === 0) {
+        prevRoomMemberIdsRef.current = new Set(nextMembers.map((m) => m.id));
+        setMembers(nextMembers);
+        return;
+      }
+
+      for (const m of nextMembers) {
+        if (!prev.has(m.id) && self && m.id !== self) {
+          showJoinRoomToast(`${m.nickname} 加入了房间`);
+        }
+      }
+      prevRoomMemberIdsRef.current = new Set(nextMembers.map((m) => m.id));
       setMembers(nextMembers);
     });
 
@@ -152,12 +184,13 @@ function App() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [nickname]);
+  }, [nickname, showJoinRoomToast]);
 
   const inRoom = roomCode.length > 0;
 
   useEffect(() => {
     if (!inRoom) {
+      prevRoomMemberIdsRef.current = new Set();
       setCopySuccess(false);
       if (copySuccessTimerRef.current) {
         clearTimeout(copySuccessTimerRef.current);
@@ -165,6 +198,14 @@ function App() {
       }
     }
   }, [inRoom]);
+
+  useEffect(() => {
+    return () => {
+      if (joinRoomToastTimerRef.current) {
+        clearTimeout(joinRoomToastTimerRef.current);
+      }
+    };
+  }, []);
 
   const currentUserLabel = useMemo(() => {
     const me = members.find((m) => m.id === selfId);
@@ -312,6 +353,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#e8e8e8]">
+      {joinRoomToast && (
+        <div
+          className="pointer-events-none fixed left-1/2 top-6 z-[60] max-w-[min(90vw,24rem)] -translate-x-1/2 px-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="pointer-events-none rounded-full border border-zinc-200 bg-zinc-900/90 px-4 py-2.5 text-center text-sm text-white shadow-lg backdrop-blur-sm">
+            {joinRoomToast}
+          </div>
+        </div>
+      )}
       <div className="mx-auto w-full max-w-[min(100%,1680px)] px-4 py-6 sm:px-6 lg:px-10 xl:px-14 lg:py-10">
         <header className="mb-6 lg:mb-10">
           <h1 className="text-center text-2xl font-bold text-zinc-800 sm:text-3xl lg:text-[1.75rem]">
