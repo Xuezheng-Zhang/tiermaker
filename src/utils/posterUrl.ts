@@ -12,14 +12,24 @@ function apiOrigin(): string {
   }
 }
 
+/**
+ * 部署在 GitHub Pages 子路径（如 /tiermaker/）时，题库里的 /posters/... 必须带上 Vite base，
+ * 否则浏览器会请求 github.io/posters/... 导致 404。
+ */
+function withViteBaseIfSiteRootPath(imageUrl: string): string {
+  if (!imageUrl.startsWith("/") || imageUrl.startsWith("//")) return imageUrl;
+  return `${import.meta.env.BASE_URL}${imageUrl.slice(1)}`;
+}
+
 export function resolvePosterImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
+  const rooted = withViteBaseIfSiteRootPath(imageUrl);
   try {
-    const u = new URL(imageUrl);
-    if (u.protocol !== "https:" && u.protocol !== "http:") return imageUrl;
+    const u = new URL(rooted, typeof window !== "undefined" ? window.location.href : undefined);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return rooted;
 
     if (/^img\d+\.doubanio\.com$/i.test(u.hostname) && u.pathname.includes("/view/photo/")) {
-      return `${apiOrigin()}/poster-proxy?u=${encodeURIComponent(imageUrl)}`;
+      return `${apiOrigin()}/poster-proxy?u=${encodeURIComponent(rooted)}`;
     }
 
     if (
@@ -28,12 +38,12 @@ export function resolvePosterImageUrl(imageUrl: string): string {
       u.hostname === "images.pexels.com" ||
       u.hostname === "loremflickr.com"
     ) {
-      return `${apiOrigin()}/image-proxy?u=${encodeURIComponent(imageUrl)}`;
+      return `${apiOrigin()}/image-proxy?u=${encodeURIComponent(rooted)}`;
     }
 
-    return imageUrl;
+    return rooted;
   } catch {
-    return imageUrl;
+    return rooted;
   }
 }
 
