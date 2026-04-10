@@ -3,7 +3,7 @@ import { RYM_TOP100_ITEMS } from "./data/rymTop100.generated";
 import { COUNTRY_FLAGS_100_ITEMS } from "./data/countryFlags100.generated";
 import { CHINA_PROVINCES_34_ITEMS } from "./data/chinaProvinces34.generated";
 import { CHINA_ATTRACTIONS_40_ITEMS } from "./data/chinaAttractions40.generated";
-import { CHINA_HOME_COOKING_49_ITEMS } from "./data/chinaHomeCooking49.generated";
+import { CHINA_HOME_COOKING_69_ITEMS } from "./data/chinaHomeCooking69.generated";
 
 export interface TierRow {
   id: string;
@@ -200,9 +200,9 @@ export const QUESTION_BANKS: QuestionBank[] = [
     items: CHINA_ATTRACTIONS_40_ITEMS,
   },
   {
-    id: "china-home-cooking-49",
+    id: "china-home-cooking-69",
     name: "中国家常菜",
-    items: CHINA_HOME_COOKING_49_ITEMS,
+    items: CHINA_HOME_COOKING_69_ITEMS,
   },
 ];
 

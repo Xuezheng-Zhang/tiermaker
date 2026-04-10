@@ -1,6 +1,6 @@
 /**
  * 中国家常菜题库：图片一律优先百度百科（bkimg），失败再 Commons file / 搜索 / 兜底。
- * 不下载到本地，写入 src/data/chinaHomeCooking49.generated.ts。
+ * 不下载到本地，写入 src/data/chinaHomeCooking69.generated.ts。
  *
  * 运行: node scripts/fetch-china-home-cooking-wiki-urls.mjs
  */
@@ -103,7 +103,7 @@ const DISHES = [
     baike: ["黄金蛋炒饭", "扬州炒饭", "蛋炒饭", "炒饭"],
     en: ["Fried rice"],
   },
-  { zh: "饺子", baike: ["饺子"], en: ["Jiaozi"] },
+  { zh: "饺子", baike: ["水饺", "饺子", "蒸饺", "锅贴"], en: ["Jiaozi"] },
   { zh: "馄饨", baike: ["馄饨"], en: ["Wonton"] },
   { zh: "蛋花汤", baike: ["蛋花汤"], en: ["Egg drop soup"] },
   { zh: "酸辣汤", baike: ["酸辣汤"], en: ["Hot and sour soup"] },
@@ -173,6 +173,27 @@ const DISHES = [
   { zh: "白切鸡", baike: ["白切鸡"], en: ["White cut chicken"] },
   { zh: "凉拌黄瓜", baike: ["凉拌黄瓜", "拍黄瓜"], en: ["Smashed cucumber salad", "Cucumber"] },
   { zh: "凉拌木耳", baike: ["凉拌木耳"], file: "File:Water-soaked black fungus.jpg", commons: ["wood ear salad"], en: ["Wood ear mushroom"] },
+
+  { zh: "水煮鱼", baike: ["水煮鱼", "水煮鱼片"], en: ["Shuizhu fish"] },
+  { zh: "毛血旺", baike: ["毛血旺"], en: ["Maoxuewang"] },
+  { zh: "红烧排骨", baike: ["红烧排骨"], en: ["Braised spare ribs"] },
+  { zh: "啤酒鸭", baike: ["啤酒鸭"], en: ["Beer duck"] },
+  { zh: "西红柿炖牛腩", baike: ["西红柿炖牛腩", "番茄牛腩"], en: ["Tomato beef stew"] },
+  { zh: "清炒虾仁", baike: ["清炒虾仁", "虾仁"], en: ["Stir-fried shrimp"] },
+  { zh: "油焖大虾", baike: ["油焖大虾", "油焖虾"], en: ["Braised prawns"] },
+  { zh: "芹菜炒肉", baike: ["芹菜炒肉", "芹菜肉丝"], en: ["Celery pork"] },
+  { zh: "小炒黄牛肉", baike: ["小炒黄牛肉", "黄牛肉"], en: ["Stir-fried beef"] },
+  { zh: "皮蛋豆腐", baike: ["皮蛋豆腐"], en: ["Century egg tofu"] },
+  { zh: "蒜蓉茄子", baike: ["蒜蓉茄子", "蒜泥茄子"], en: ["Garlic eggplant"] },
+  { zh: "红烧带鱼", baike: ["红烧带鱼", "带鱼"], en: ["Braised hairtail"] },
+  { zh: "洋葱炒蛋", baike: ["洋葱炒蛋", "洋葱炒鸡蛋"], en: ["Onion scrambled eggs"] },
+  { zh: "炸酱面", baike: ["炸酱面", "老北京炸酱面"], en: ["Zhajiangmian"] },
+  { zh: "锅包肉", baike: ["锅包肉"], en: ["Guo bao rou"] },
+  { zh: "地锅鸡", baike: ["地锅鸡"], en: ["Di guo ji"] },
+  { zh: "蚂蚁上树", baike: ["蚂蚁上树"], en: ["Ants climbing tree"] },
+  { zh: "干锅土豆片", baike: ["干锅土豆片", "干锅土豆"], en: ["Dry pot potato"] },
+  { zh: "香菇油菜", baike: ["香菇油菜", "香菇炒油菜"], en: ["Mushroom bok choy"] },
+  { zh: "酸辣藕丁", baike: ["酸辣藕丁", "炝炒藕丁"], en: ["Spicy lotus root"] },
 ];
 
 /** 最后兜底：不同菜品轮换，避免同图 */
@@ -408,11 +429,11 @@ async function main() {
   }
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
-  const outPath = join(__dirname, "..", "src", "data", "chinaHomeCooking49.generated.ts");
+  const outPath = join(__dirname, "..", "src", "data", "chinaHomeCooking69.generated.ts");
   const content = `/** 由 scripts/fetch-china-home-cooking-wiki-urls.mjs 自动生成；优先百度百科 bkimg，失败时为维基共享资源（未下载到本地） */
 import type { QuestionBankItem } from "../types";
 
-export const CHINA_HOME_COOKING_49_ITEMS: QuestionBankItem[] = [
+export const CHINA_HOME_COOKING_69_ITEMS: QuestionBankItem[] = [
 ${lines.join("\n")}
 ];
 `;
