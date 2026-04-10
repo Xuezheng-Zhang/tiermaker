@@ -16,6 +16,7 @@
     "download:china-attractions": "node scripts/download-china-attractions-wiki.mjs",
     "fetch:china-home-cooking-urls": "node scripts/fetch-china-home-cooking-wiki-urls.mjs",
     "fetch:bangumi-jp-tv-2026": "node scripts/fetch-bangumi-jp-tv-2026-heat.mjs",
+    "fetch:di-si-drinks": "node scripts/fetch-di-si-drinks-baike.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

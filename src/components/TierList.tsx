@@ -349,7 +349,7 @@ export function TierList({
                   title={item.name}
                   onDragStart={(e) => handleCurrentItemDragStart(e, item, itemId)}
                   onClick={() => handleTapBankItem(item, itemId)}
-                  className={`relative aspect-square overflow-hidden rounded-lg border-2 cursor-grab border-dashed transition-colors active:cursor-grabbing ${
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 border-solid cursor-grab transition-colors active:cursor-grabbing ${
                     isSelectedTouch
                       ? "border-pink-500 bg-pink-50/90 ring-2 ring-pink-300"
                       : "border-zinc-300 bg-white hover:border-pink-400 hover:bg-pink-50/50"

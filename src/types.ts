@@ -5,6 +5,7 @@ import { CHINA_PROVINCES_34_ITEMS } from "./data/chinaProvinces34.generated";
 import { CHINA_ATTRACTIONS_40_ITEMS } from "./data/chinaAttractions40.generated";
 import { CHINA_HOME_COOKING_69_ITEMS } from "./data/chinaHomeCooking69.generated";
 import { BANGUMI_JP_TV_2026_TOP100_ITEMS } from "./data/bangumiJpTv2026Top100.generated";
+import { DI_SI_DRINKS_ITEMS } from "./data/diSiDrinks.generated";
 
 export interface TierRow {
   id: string;
@@ -85,6 +86,11 @@ export const QUESTION_BANKS: QuestionBank[] = [
       { name: "千张卷油条", imageUrl: "/posters/breakfast-rank/018.png" },
       { name: "驴肉火烧", imageUrl: "/posters/breakfast-rank/019.png" },
     ],
+  },
+  {
+    id: "di-si-drinks",
+    name: "屌丝饮料",
+    items: DI_SI_DRINKS_ITEMS,
   },
   {
     id: "douban-top250",
