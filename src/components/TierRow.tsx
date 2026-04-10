@@ -274,7 +274,7 @@ export function TierRow({
                   draggable={false}
                 />
                 <p
-                  className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2 sm:hidden"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2"
                   aria-hidden
                 >
                   {item.name}

@@ -63,7 +63,7 @@ export interface QuestionBank {
 export const QUESTION_BANKS: QuestionBank[] = [
   {
     id: "breakfast-rank",
-    name: "早餐排名",
+    name: "早餐",
     items: [
       { name: "肠粉", imageUrl: "/posters/breakfast-rank/001.png" },
       { name: "牛肉面", imageUrl: "/posters/breakfast-rank/002.png" },

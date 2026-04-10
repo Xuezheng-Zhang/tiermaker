@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
@@ -35,6 +35,9 @@ export function TierList({
   onMovePlacedItem,
 }: TierListProps) {
   const tableRef = useRef<HTMLDivElement>(null);
+  const bankPickerRef = useRef<HTMLDivElement>(null);
+  const [bankPickerExpanded, setBankPickerExpanded] = useState(false);
+  const [bankPickerThreeRowMaxPx, setBankPickerThreeRowMaxPx] = useState<number | null>(null);
   const [tiers] = useState<TierRowType[]>(() => DEFAULT_TIERS);
   const [exporting, setExporting] = useState(false);
   const [pendingTouchDrop, setPendingTouchDrop] = useState<DropData | null>(null);
@@ -78,6 +81,44 @@ export function TierList({
   const handleSelectBank = (bankId: string) => {
     onSelectBank(bankId);
   };
+
+  /** 选择题库：超过三行时测量前三行高度，用于折叠展示 */
+  const measureBankPickerThreeRows = useCallback(() => {
+    const root = bankPickerRef.current;
+    if (!root) return;
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>("button")];
+    if (buttons.length === 0) {
+      setBankPickerThreeRowMaxPx(null);
+      return;
+    }
+    const rects = buttons.map((b) => b.getBoundingClientRect());
+    const tops = [...new Set(rects.map((r) => Math.round(r.top)))].sort((a, b) => a - b);
+    if (tops.length <= 3) {
+      setBankPickerThreeRowMaxPx(null);
+      return;
+    }
+    const y0 = tops[0];
+    const y1 = tops[1];
+    const y2 = tops[2];
+    const inFirstThree = rects.filter(
+      (r) =>
+        Math.abs(r.top - y0) < 2 ||
+        Math.abs(r.top - y1) < 2 ||
+        Math.abs(r.top - y2) < 2
+    );
+    const top = Math.min(...inFirstThree.map((r) => r.top));
+    const bottom = Math.max(...inFirstThree.map((r) => r.bottom));
+    setBankPickerThreeRowMaxPx(bottom - top);
+  }, []);
+
+  useLayoutEffect(() => {
+    measureBankPickerThreeRows();
+    const el = bankPickerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => measureBankPickerThreeRows());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureBankPickerThreeRows]);
 
   const isTouchDevice =
     typeof window !== "undefined" &&
@@ -195,30 +236,59 @@ export function TierList({
 
   return (
     <div className="w-full">
-      {/* 选择题库 */}
+      {/* 选择题库：默认三行，超出可展开 */}
       <div className="mb-4">
         <h2 className="text-base font-medium text-zinc-700 mb-2">选择题库</h2>
-        <div className="flex flex-wrap gap-2">
-          {QUESTION_BANKS.map((bank) => (
-            <button
-              key={bank.id}
-              type="button"
-              onClick={() => handleSelectBank(bank.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                selectedBankId === bank.id
-                  ? "bg-[#333] text-white"
-                  : "bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
-              }`}
-            >
-              <span>{bank.name}</span>
-              <span className="opacity-70 text-xs">（{bank.items.length} 题）</span>
-            </button>
-          ))}
+        <div className="relative">
+          <div
+            ref={bankPickerRef}
+            className={`flex flex-wrap gap-2 ${
+              !bankPickerExpanded && bankPickerThreeRowMaxPx != null ? "overflow-hidden" : ""
+            }`}
+            style={
+              !bankPickerExpanded && bankPickerThreeRowMaxPx != null
+                ? { maxHeight: bankPickerThreeRowMaxPx }
+                : undefined
+            }
+          >
+            {QUESTION_BANKS.map((bank) => (
+              <button
+                key={bank.id}
+                type="button"
+                onClick={() => handleSelectBank(bank.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  selectedBankId === bank.id
+                    ? "bg-[#333] text-white"
+                    : "bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                <span>{bank.name}</span>
+                <span className="opacity-70 text-xs">（{bank.items.length} 题）</span>
+              </button>
+            ))}
+          </div>
+          {!bankPickerExpanded && bankPickerThreeRowMaxPx != null && (
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 right-0 h-9 bg-gradient-to-t from-[#e8e8e8] via-[#e8e8e8]/85 to-transparent"
+              aria-hidden
+            />
+          )}
         </div>
+        {bankPickerThreeRowMaxPx != null && (
+          <button
+            type="button"
+            onClick={() => setBankPickerExpanded((e) => !e)}
+            className="mt-1.5 text-sm text-zinc-600 hover:text-zinc-900 underline-offset-2 hover:underline"
+          >
+            {bankPickerExpanded ? "收起" : "展开全部"}
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-medium text-zinc-700">等级列表</h2>
+        <h2 className="text-base font-medium text-zinc-700">
+          {selectedBank ? `${selectedBank.name}实力排行` : "实力排行"}
+        </h2>
         <button
           type="button"
           onClick={handleExportImage}
@@ -298,7 +368,7 @@ export function TierList({
                   />
                   {/* 小屏无悬停：底部显示名称 */}
                   <p
-                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2 sm:hidden"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/80 via-black/45 to-transparent px-0.5 pb-1 pt-4 text-center text-[10px] leading-tight text-white line-clamp-2"
                     aria-hidden
                   >
                     {item.name}
