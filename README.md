@@ -6,12 +6,7 @@
 
 ## 在线体验
 
-若作者已部署公开站点，可直接打开使用（示例，以实际部署为准）：
-
-- GitHub Pages：`https://xuezheng-zhang.github.io/tiermaker/`
-- 其他：见仓库主页 [Website] 或作者说明
-
-> 联机功能依赖单独的 **Socket 后端**（见下文环境变量）；仅静态托管时，单机排行仍可用。
+https://xuezheng-zhang.github.io/tiermaker/
 
 ## 功能一览
 
