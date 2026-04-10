@@ -125,7 +125,6 @@ function App() {
   const socketRef = useRef<Socket | null>(null);
   const copySuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRoomToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const selfIdRef = useRef("");
   const prevRoomMemberIdsRef = useRef<Set<string>>(new Set());
 
   const showJoinRoomToast = useCallback((message: string) => {
@@ -142,10 +141,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    selfIdRef.current = selfId;
-  }, [selfId]);
-
-  useEffect(() => {
     if (!nickname) return;
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
@@ -159,7 +154,8 @@ function App() {
 
     socket.on("room_members", ({ members: nextMembers }: { members: RoomMember[] }) => {
       const prev = prevRoomMemberIdsRef.current;
-      const self = selfIdRef.current;
+      // 用 socket.id 判断本人，避免 selfId 仅在 useEffect 里写入、晚于第二条 room_members 导致首次加入不提示
+      const mySocketId = socket.id;
 
       if (prev.size === 0) {
         prevRoomMemberIdsRef.current = new Set(nextMembers.map((m) => m.id));
@@ -168,7 +164,7 @@ function App() {
       }
 
       for (const m of nextMembers) {
-        if (!prev.has(m.id) && self && m.id !== self) {
+        if (!prev.has(m.id) && mySocketId && m.id !== mySocketId) {
           showJoinRoomToast(`${m.nickname} 加入了房间`);
         }
       }
@@ -359,7 +355,7 @@ function App() {
           role="status"
           aria-live="polite"
         >
-          <div className="pointer-events-none rounded-full border border-zinc-200 bg-zinc-900/90 px-4 py-2.5 text-center text-sm text-white shadow-lg backdrop-blur-sm">
+          <div className="pointer-events-none rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-center text-sm text-zinc-800 shadow-lg shadow-zinc-900/10">
             {joinRoomToast}
           </div>
         </div>
