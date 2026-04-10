@@ -120,20 +120,19 @@ function App() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [loadingAction, setLoadingAction] = useState<"create" | "join" | "leave" | null>(null);
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [joinRoomToast, setJoinRoomToast] = useState<string | null>(null);
+  const [floatingToast, setFloatingToast] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const copySuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const joinRoomToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const floatingToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevRoomMemberIdsRef = useRef<Set<string>>(new Set());
 
-  const showJoinRoomToast = useCallback((message: string) => {
-    setJoinRoomToast(message);
-    if (joinRoomToastTimerRef.current) clearTimeout(joinRoomToastTimerRef.current);
-    joinRoomToastTimerRef.current = setTimeout(() => {
-      setJoinRoomToast(null);
-      joinRoomToastTimerRef.current = null;
-    }, 3000);
+  /** 顶部白底悬浮提示（加入房间、复制成功等） */
+  const showFloatingToast = useCallback((message: string, durationMs = 3000) => {
+    setFloatingToast(message);
+    if (floatingToastTimerRef.current) clearTimeout(floatingToastTimerRef.current);
+    floatingToastTimerRef.current = setTimeout(() => {
+      setFloatingToast(null);
+      floatingToastTimerRef.current = null;
+    }, durationMs);
   }, []);
 
   useEffect(() => {
@@ -165,7 +164,7 @@ function App() {
 
       for (const m of nextMembers) {
         if (!prev.has(m.id) && mySocketId && m.id !== mySocketId) {
-          showJoinRoomToast(`${m.nickname} 加入了房间`);
+          showFloatingToast(`${m.nickname} 加入了房间`);
         }
       }
       prevRoomMemberIdsRef.current = new Set(nextMembers.map((m) => m.id));
@@ -180,25 +179,25 @@ function App() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [nickname, showJoinRoomToast]);
+  }, [nickname, showFloatingToast]);
 
   const inRoom = roomCode.length > 0;
 
   useEffect(() => {
     if (!inRoom) {
       prevRoomMemberIdsRef.current = new Set();
-      setCopySuccess(false);
-      if (copySuccessTimerRef.current) {
-        clearTimeout(copySuccessTimerRef.current);
-        copySuccessTimerRef.current = null;
+      if (floatingToastTimerRef.current) {
+        clearTimeout(floatingToastTimerRef.current);
+        floatingToastTimerRef.current = null;
       }
+      setFloatingToast(null);
     }
   }, [inRoom]);
 
   useEffect(() => {
     return () => {
-      if (joinRoomToastTimerRef.current) {
-        clearTimeout(joinRoomToastTimerRef.current);
+      if (floatingToastTimerRef.current) {
+        clearTimeout(floatingToastTimerRef.current);
       }
     };
   }, []);
@@ -338,12 +337,7 @@ function App() {
     if (!roomCode) return;
     try {
       await navigator.clipboard.writeText(roomCode);
-      setCopySuccess(true);
-      if (copySuccessTimerRef.current) clearTimeout(copySuccessTimerRef.current);
-      copySuccessTimerRef.current = setTimeout(() => {
-        setCopySuccess(false);
-        copySuccessTimerRef.current = null;
-      }, 2000);
+      showFloatingToast("复制成功", 2500);
     } catch {
       alert("复制失败，请检查浏览器权限或手动选中房间号复制");
     }
@@ -351,14 +345,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#e8e8e8]">
-      {joinRoomToast && (
+      {floatingToast && (
         <div
           className="pointer-events-none fixed left-1/2 top-6 z-[60] max-w-[min(90vw,24rem)] -translate-x-1/2 px-4"
           role="status"
           aria-live="polite"
         >
           <div className="pointer-events-none rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-center text-sm text-zinc-800 shadow-lg shadow-zinc-900/10">
-            {joinRoomToast}
+            {floatingToast}
           </div>
         </div>
       )}
@@ -408,11 +402,6 @@ function App() {
                   >
                     复制
                   </button>
-                  {copySuccess && (
-                    <span className="text-xs text-emerald-600" role="status">
-                      复制成功
-                    </span>
-                  )}
                 </>
               ) : (
                 "当前未在房间中（单机模式）"
