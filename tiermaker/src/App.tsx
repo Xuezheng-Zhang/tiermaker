@@ -120,7 +120,9 @@ function App() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [loadingAction, setLoadingAction] = useState<"create" | "join" | "leave" | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const copySuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setNickname(getInitialNickname());
@@ -153,6 +155,17 @@ function App() {
   }, [nickname]);
 
   const inRoom = roomCode.length > 0;
+
+  useEffect(() => {
+    if (!inRoom) {
+      setCopySuccess(false);
+      if (copySuccessTimerRef.current) {
+        clearTimeout(copySuccessTimerRef.current);
+        copySuccessTimerRef.current = null;
+      }
+    }
+  }, [inRoom]);
+
   const currentUserLabel = useMemo(() => {
     const me = members.find((m) => m.id === selfId);
     return me?.nickname || nickname;
@@ -286,6 +299,12 @@ function App() {
     if (!roomCode) return;
     try {
       await navigator.clipboard.writeText(roomCode);
+      setCopySuccess(true);
+      if (copySuccessTimerRef.current) clearTimeout(copySuccessTimerRef.current);
+      copySuccessTimerRef.current = setTimeout(() => {
+        setCopySuccess(false);
+        copySuccessTimerRef.current = null;
+      }, 2000);
     } catch {
       alert("复制失败，请检查浏览器权限或手动选中房间号复制");
     }
@@ -337,8 +356,13 @@ function App() {
                     onClick={() => void handleCopyRoomCode()}
                     className="rounded border border-zinc-300 bg-white px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-50"
                   >
-                    复制房间码
+                    复制
                   </button>
+                  {copySuccess && (
+                    <span className="text-xs text-emerald-600" role="status">
+                      复制成功
+                    </span>
+                  )}
                 </>
               ) : (
                 "当前未在房间中（单机模式）"
