@@ -327,14 +327,15 @@ app.get("/poster-proxy", async (req, res) => {
   }
 });
 
-/** 百度百科 / 维基等外链图：浏览器直接 <img> 无 CORS，html2canvas 导出时 canvas 被污染导致 toDataURL 失败。经同源代理并带 ACAO，配合 img crossOrigin=anonymous 可导出。 */
+/** 百度百科 / 维基等外链图：浏览器直接 <img> 无 CORS，导出为图时 canvas 易被污染。经同源代理并带 ACAO，配合 img crossOrigin=anonymous 可导出。 */
 function isImageProxyAllowedHost(hostname) {
   const h = String(hostname).toLowerCase();
   return (
     h === "bkimg.cdn.bcebos.com" ||
     h === "upload.wikimedia.org" ||
     h === "images.pexels.com" ||
-    h === "loremflickr.com"
+    h === "loremflickr.com" ||
+    h === "lain.bgm.tv"
   );
 }
 
@@ -368,6 +369,9 @@ app.get("/image-proxy", async (req, res) => {
     };
     if (parsed.hostname === "bkimg.cdn.bcebos.com") {
       headers.Referer = "https://baike.baidu.com/";
+    }
+    if (parsed.hostname === "lain.bgm.tv") {
+      headers.Referer = "https://bangumi.tv/";
     }
     const upstream = await fetch(target, { headers });
     if (!upstream.ok) {

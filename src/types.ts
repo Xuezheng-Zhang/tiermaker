@@ -4,6 +4,7 @@ import { COUNTRY_FLAGS_100_ITEMS } from "./data/countryFlags100.generated";
 import { CHINA_PROVINCES_34_ITEMS } from "./data/chinaProvinces34.generated";
 import { CHINA_ATTRACTIONS_40_ITEMS } from "./data/chinaAttractions40.generated";
 import { CHINA_HOME_COOKING_69_ITEMS } from "./data/chinaHomeCooking69.generated";
+import { BANGUMI_JP_TV_2026_TOP100_ITEMS } from "./data/bangumiJpTv2026Top100.generated";
 
 export interface TierRow {
   id: string;
@@ -114,6 +115,11 @@ export const QUESTION_BANKS: QuestionBank[] = [
     id: "china-home-cooking-69",
     name: "中国家常菜",
     items: CHINA_HOME_COOKING_69_ITEMS,
+  },
+  {
+    id: "bangumi-hot-jp-tv-2026",
+    name: "热门日本番剧",
+    items: BANGUMI_JP_TV_2026_TOP100_ITEMS,
   },
 ];
 

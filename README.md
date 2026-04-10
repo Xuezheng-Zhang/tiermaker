@@ -12,18 +12,18 @@ https://xuezheng-zhang.github.io/tiermaker/
 
 | 能力 | 说明 |
 |------|------|
-| 多题库 | 早餐、豆瓣 Top250、RYM 专辑、国旗、省份、景点、家常菜等 |
+| 多题库 | 早餐、豆瓣 Top250、RYM 专辑、国旗、省份、景点、家常菜、[Bangumi](https://bangumi.tv) 热门日本番剧等 |
 | 拖拽排行 | 触摸与鼠标拖拽，自动档位与排序 |
 | 联机房间 | 创建 / 加入房间（5 位码），多人同步操作与进房提示 |
 | 海报代理 | 豆瓣等受 Referer 限制的图片经后端代理加载；部分外链图同理 |
-| 导出 | 基于 html2canvas 导出当前排行图为图片 |
+| 导出 | 基于 html-to-image 导出当前排行图为图片 |
 | GitHub Actions | 可自动构建并发布到 GitHub Pages |
 
 ## 技术栈
 
 - **前端**：React 19、TypeScript、Vite 7、Tailwind CSS 4
 - **联机服务**：Node.js、Express 5、Socket.IO 4
-- **其他**：html2canvas
+- **其他**：html-to-image
 
 ## 本地运行
 
@@ -90,6 +90,7 @@ tiermaker/
 部分题库数据由脚本生成，按需运行（详见 `package.json` 中 `scripts`）：
 
 - `fetch:douban`、`download:douban` 等
+- `fetch:bangumi-jp-tv-2026`：从 [Bangumi 榜单页](https://bangumi.tv/anime/browser/日本/tv/airtime/2026?sort=trends) 生成「热门日本番剧」前 100 条
 
 ## 开源与许可证
 

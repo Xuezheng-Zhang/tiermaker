@@ -36,7 +36,8 @@ export function resolvePosterImageUrl(imageUrl: string): string {
       u.hostname === "bkimg.cdn.bcebos.com" ||
       u.hostname === "upload.wikimedia.org" ||
       u.hostname === "images.pexels.com" ||
-      u.hostname === "loremflickr.com"
+      u.hostname === "loremflickr.com" ||
+      u.hostname === "lain.bgm.tv"
     ) {
       return `${apiOrigin()}/image-proxy?u=${encodeURIComponent(rooted)}`;
     }
@@ -47,7 +48,7 @@ export function resolvePosterImageUrl(imageUrl: string): string {
   }
 }
 
-/** 经本服务代理的图片（可设 crossOrigin 供 html2canvas 导出） */
+/** 经本服务代理的图片（可设 crossOrigin 供导出为 PNG） */
 export function isProxiedTierImage(src: string): boolean {
   return src.includes("/poster-proxy?") || src.includes("/image-proxy?");
 }

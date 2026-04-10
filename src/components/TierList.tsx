@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
@@ -147,16 +147,15 @@ export function TierList({
     if (!tableRef.current) return;
     setExporting(true);
     try {
-      const canvas = await html2canvas(tableRef.current, {
-        // 图很多时 2x 全屏截图内存与耗时暴涨，自动降采样
-        scale: totalPlacedCount > 48 ? 1 : 2,
-        useCORS: true,
-        backgroundColor: "#333",
-        logging: false,
+      // html2canvas 无法解析 Tailwind v4 的 oklab()/oklch()，改用浏览器侧 SVG 渲染
+      const dataUrl = await toPng(tableRef.current, {
+        cacheBust: true,
+        pixelRatio: totalPlacedCount > 48 ? 1 : 2,
+        backgroundColor: "#333333",
       });
       const link = document.createElement("a");
       link.download = `从夯到拉-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error("导出图片失败:", err);

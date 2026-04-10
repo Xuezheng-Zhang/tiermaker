@@ -15,11 +15,12 @@
     "download:china-provinces": "node scripts/download-china-provinces-wiki.mjs",
     "download:china-attractions": "node scripts/download-china-attractions-wiki.mjs",
     "fetch:china-home-cooking-urls": "node scripts/fetch-china-home-cooking-wiki-urls.mjs",
+    "fetch:bangumi-jp-tv-2026": "node scripts/fetch-bangumi-jp-tv-2026-heat.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
     "express": "^5.1.0",
-    "html2canvas": "^1.4.1",
+    "html-to-image": "^1.11.13",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "socket.io": "^4.8.1",
@@ -32,6 +33,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -39,7 +41,6 @@
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1",
-    "concurrently": "^9.2.1"
+    "vite": "^7.3.1"
   }
 }
