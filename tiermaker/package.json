@@ -13,6 +13,7 @@
     "download:douban": "node scripts/download-douban-posters.mjs",
     "download:rym": "node scripts/download-rym-top100.mjs",
     "download:china-provinces": "node scripts/download-china-provinces-wiki.mjs",
+    "download:china-attractions": "node scripts/download-china-attractions-wiki.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
