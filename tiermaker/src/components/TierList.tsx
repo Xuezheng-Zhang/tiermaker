@@ -3,7 +3,11 @@ import html2canvas from "html2canvas";
 import { TierRow } from "./TierRow";
 import type { TierRow as TierRowType, BoardState, QuestionBankItem } from "../types";
 import { DEFAULT_TIERS, QUESTION_BANKS } from "../types";
-import { isProxiedDoubanPoster, resolvePosterImageUrl } from "../utils/posterUrl";
+import {
+  imageReferrerPolicyForUrl,
+  isProxiedDoubanPoster,
+  resolvePosterImageUrl,
+} from "../utils/posterUrl";
 
 interface TierListProps {
   boardState: BoardState;
@@ -261,6 +265,7 @@ export function TierList({
             {bankItemsStillInPool.map(({ item, itemId }) => {
               const displaySrc = resolvePosterImageUrl(item.imageUrl);
               const proxied = isProxiedDoubanPoster(displaySrc);
+              const refPolicy = imageReferrerPolicyForUrl(displaySrc);
               const isSelectedTouch =
                 pendingTouchDrop?.type === "current" && pendingTouchDrop.itemId === itemId;
               return (
@@ -280,6 +285,7 @@ export function TierList({
                     src={displaySrc}
                     alt={item.name}
                     title={item.name}
+                    referrerPolicy={refPolicy}
                     loading="lazy"
                     decoding="async"
                     crossOrigin={proxied ? "anonymous" : undefined}

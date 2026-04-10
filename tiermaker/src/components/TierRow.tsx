@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
 import type { TierRow as TierRowType, PlacedItem as PlacedItemType } from "../types";
-import { isProxiedDoubanPoster, resolvePosterImageUrl } from "../utils/posterUrl";
+import {
+  imageReferrerPolicyForUrl,
+  isProxiedDoubanPoster,
+  resolvePosterImageUrl,
+} from "../utils/posterUrl";
 
 interface TierRowProps {
   tier: TierRowType;
@@ -238,6 +242,7 @@ export function TierRow({
           placedItems.map((item) => {
             const displaySrc = resolvePosterImageUrl(item.imageUrl);
             const proxied = isProxiedDoubanPoster(displaySrc);
+            const refPolicy = imageReferrerPolicyForUrl(displaySrc);
             return (
             <div
               key={item.id}
@@ -260,6 +265,7 @@ export function TierRow({
                 src={displaySrc}
                 alt={item.name}
                 title={item.name}
+                referrerPolicy={refPolicy}
                 loading="lazy"
                 decoding="async"
                 crossOrigin={proxied ? "anonymous" : undefined}

@@ -28,3 +28,18 @@ export function resolvePosterImageUrl(imageUrl: string): string {
 export function isProxiedDoubanPoster(src: string): boolean {
   return src.includes("/poster-proxy?");
 }
+
+/**
+ * 百度百科 bkimg CDN 会校验 Referer：从 localhost / 任意第三方页面嵌图时带上的 Referer 会 403。
+ * 对这类 URL 使用 no-referrer，图片请求不携带 Referer 即可正常显示（与 curl 无 -e 行为一致）。
+ */
+export function imageReferrerPolicyForUrl(url: string): "no-referrer" | undefined {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url);
+    if (u.hostname === "bkimg.cdn.bcebos.com") return "no-referrer";
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
