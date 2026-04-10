@@ -4,8 +4,15 @@ import { Server } from "socket.io";
 
 const app = express();
 const httpServer = createServer(app);
+
+/** 默认 pingTimeout 仅约 20s，网络抖动或短暂后台易误判断线；拉长到 1 小时 */
+const SOCKET_PING_TIMEOUT_MS = 60 * 60 * 1000;
+const SOCKET_PING_INTERVAL_MS = 20 * 1000;
+
 const io = new Server(httpServer, {
   cors: { origin: "*" },
+  pingTimeout: SOCKET_PING_TIMEOUT_MS,
+  pingInterval: SOCKET_PING_INTERVAL_MS,
 });
 
 const PORT = Number(process.env.PORT || 3001);

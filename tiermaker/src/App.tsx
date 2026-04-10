@@ -128,7 +128,14 @@ function App() {
 
   useEffect(() => {
     if (!nickname) return;
-    const socket = io(SOCKET_URL, { transports: ["websocket"] });
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      timeout: 60000,
+    });
     socketRef.current = socket;
 
     socket.on("room_members", ({ members: nextMembers }: { members: RoomMember[] }) => {
