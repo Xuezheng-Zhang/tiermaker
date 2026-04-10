@@ -151,6 +151,9 @@ io.on("connection", (socket) => {
     socket.join(code);
     socketRoomMap.set(socket.id, code);
 
+    // 与 join_room 一致广播一次，便于客户端用 room_members 建立「已在房内成员」基线，避免第一人加入时被当成首次快照而不提示
+    emitRoomInfo(room);
+
     ack?.({
       ok: true,
       roomCode: code,

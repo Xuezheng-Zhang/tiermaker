@@ -289,6 +289,7 @@ function App() {
       }
       setRoomCode(res.roomCode);
       setBoardState(res.state);
+      prevRoomMemberIdsRef.current = new Set(res.members.map((m) => m.id));
       setMembers(res.members);
       setSelfId(res.selfId);
     });
@@ -315,6 +316,7 @@ function App() {
       setJoinCodeInput("");
       setRoomCode(res.roomCode);
       setBoardState(res.state);
+      prevRoomMemberIdsRef.current = new Set(res.members.map((m) => m.id));
       setMembers(res.members);
       setSelfId(res.selfId);
     });
@@ -416,29 +418,32 @@ function App() {
                 "当前未在房间中（单机模式）"
               )}
             </div>
+            {inRoom && members.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-200/80 pt-3">
+                <span className="shrink-0 text-xs font-medium text-zinc-500">房间内</span>
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  {members.map((member) => {
+                    const firstChar = member.nickname?.[0] ?? "?";
+                    const isSelf = member.id === selfId;
+                    return (
+                      <div
+                        key={member.id}
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold shadow-sm ${
+                          isSelf ? "bg-zinc-900 text-white" : "border border-zinc-300 bg-white text-zinc-700"
+                        }`}
+                        title={member.nickname}
+                      >
+                        {firstChar}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
         <main className="relative">
-          {inRoom && members.length > 0 && (
-            <div className="pointer-events-none absolute right-0 top-0 z-20 m-3 hidden items-center gap-1.5 sm:flex">
-              {members.map((member) => {
-                const firstChar = member.nickname?.[0] ?? "?";
-                const isSelf = member.id === selfId;
-                return (
-                  <div
-                    key={member.id}
-                    className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-sm ${
-                      isSelf ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-300"
-                    }`}
-                    title={member.nickname}
-                  >
-                    {firstChar}
-                  </div>
-                );
-              })}
-            </div>
-          )}
           <div className="mt-2 sm:mt-0">
             <TierList
               boardState={boardState}
