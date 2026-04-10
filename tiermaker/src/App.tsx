@@ -30,6 +30,10 @@ function createEmptyBoardState(): BoardState {
   };
 }
 
+function normalizeRoomCodeDigits(text: string): string {
+  return text.replace(/\D/g, "").slice(0, 5);
+}
+
 function applyPlaceItem(
   state: BoardState,
   payload: { tierId: string; itemId: string; name: string; imageUrl: string }
@@ -282,6 +286,62 @@ function App() {
     });
   };
 
+  const handlePasteJoinCode = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setJoinCodeInput(normalizeRoomCodeDigits(text));
+    } catch {
+      alert("无法读取剪贴板，请检查浏览器权限或手动输入房间码");
+    }
+  };
+
+  const handlePasteRoomCodeBesideDisplay = async () => {
+    if (!socketRef.current || !nickname || !inRoom) return;
+    let code: string;
+    try {
+      const text = await navigator.clipboard.readText();
+      code = normalizeRoomCodeDigits(text);
+    } catch {
+      alert("无法读取剪贴板，请检查浏览器权限");
+      return;
+    }
+    if (code.length !== 5) {
+      alert("剪贴板里没有有效的 5 位房间码");
+      return;
+    }
+    if (code === roomCode) {
+      alert("剪贴板中的房间码与当前房间相同");
+      return;
+    }
+    if (!window.confirm(`离开当前房间并加入 ${code}？`)) return;
+
+    setLoadingAction("join");
+    socketRef.current.emit("leave_room", {}, () => {
+      setRoomCode("");
+      setMembers([]);
+      setSelfId("");
+      setBoardState(createEmptyBoardState());
+      socketRef.current!.emit("join_room", { roomCode: code, nickname }, (res: {
+        ok: boolean;
+        roomCode?: string;
+        state?: BoardState;
+        members?: RoomMember[];
+        selfId?: string;
+        message?: string;
+      }) => {
+        setLoadingAction(null);
+        if (!res.ok || !res.roomCode || !res.state || !res.members || !res.selfId) {
+          alert(res.message || "加入房间失败");
+          return;
+        }
+        setRoomCode(res.roomCode);
+        setBoardState(res.state);
+        setMembers(res.members);
+        setSelfId(res.selfId);
+      });
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#e8e8e8]">
       <div className="mx-auto w-full max-w-[min(100%,1680px)] px-4 py-6 sm:px-6 lg:px-10 xl:px-14 lg:py-10">
@@ -319,8 +379,22 @@ function App() {
                 </button>
               </div>
             </div>
-            <div className="mt-2 text-zinc-500">
-              {inRoom ? `房间号：${roomCode}` : "当前未在房间中（单机模式）"}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-zinc-500">
+              {inRoom ? (
+                <>
+                  <span>房间号：{roomCode}</span>
+                  <button
+                    type="button"
+                    onClick={handlePasteRoomCodeBesideDisplay}
+                    disabled={loadingAction !== null}
+                    className="rounded border border-zinc-300 bg-white px-2 py-0.5 text-xs text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+                  >
+                    粘贴号码
+                  </button>
+                </>
+              ) : (
+                "当前未在房间中（单机模式）"
+              )}
             </div>
           </div>
         </header>
@@ -363,13 +437,23 @@ function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl">
             <h3 className="text-base font-semibold text-zinc-800">输入 5 位房间码</h3>
-            <input
-              value={joinCodeInput}
-              onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
-              className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-800 outline-none focus:border-zinc-500"
-              placeholder="例如：58231"
-              inputMode="numeric"
-            />
+            <div className="mt-3 flex gap-2">
+              <input
+                value={joinCodeInput}
+                onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-zinc-800 outline-none focus:border-zinc-500"
+                placeholder="例如：58231"
+                inputMode="numeric"
+              />
+              <button
+                type="button"
+                onClick={() => void handlePasteJoinCode()}
+                disabled={loadingAction === "join"}
+                className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+              >
+                粘贴号码
+              </button>
+            </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
