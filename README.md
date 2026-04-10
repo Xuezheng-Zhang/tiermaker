@@ -1,6 +1,6 @@
 # 从夯到拉生成器
 
-一个受 Tier List 启发的网页小工具：从题库中选图，拖拽到 S～D 档排行，支持**单机**与**多人实时联机**同步黑板，并可导出图片。
+一个受 Tier List 启发的网页小工具：从题库中选图，拖拽排行，支持**单机**与**多人实时联机**同步黑板，并可导出图片。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
